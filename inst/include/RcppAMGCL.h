@@ -237,12 +237,18 @@ public:
         if (maxiter < 1)
             throw std::invalid_argument("maxiter must be a positive integer");
         ThreadGuard guard(threads);
-        if (method == "cg")
-            implementation_.reset(new ImplementationFor<amgcl::solver::cg<Backend>>(
-                matrix_, tol, maxiter));
-        else
-            implementation_.reset(new ImplementationFor<amgcl::solver::bicgstab<Backend>>(
-                matrix_, tol, maxiter));
+        try {
+            if (method == "cg")
+                implementation_.reset(new ImplementationFor<amgcl::solver::cg<Backend>>(
+                    matrix_, tol, maxiter));
+            else
+                implementation_.reset(new ImplementationFor<amgcl::solver::bicgstab<Backend>>(
+                    matrix_, tol, maxiter));
+        } catch (const std::runtime_error& error) {
+            throw std::runtime_error(std::string("AMGCL setup failed; check that the matrix ") +
+                "is nonsingular and suitable for the unpivoted coarse solver. AMGCL: " +
+                error.what());
+        }
     }
 
     Solver(const Solver&) = delete;

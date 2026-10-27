@@ -61,16 +61,37 @@ fit2 <- amgcl_solve(s, seq_len(nrow(A)))
 # For a nonsymmetric system, select BiCGStab.
 B <- A + Matrix::sparseMatrix(i = 1, j = 2, x = 0.2, dims = dim(A))
 fit3 <- amgcl_solve(B, b, solver = "bicgstab")
+
+# Symmetric sparse storage and one-column matrix right-hand sides work too.
+S <- Matrix::bandSparse(
+  1000, k = c(0, 1),
+  diagonals = list(rep(3, 1000), rep(-1, 999)), symmetric = TRUE
+)
+rhs <- S %*% rep(1, nrow(S))
+fit4 <- amgcl_solve(S, rhs)
 ```
 
-Inputs must be nonempty, square `Matrix::dgCMatrix` matrices with finite
-entries and a nonzero diagonal entry in every row, and finite numeric
-right-hand-side vectors. The selected AMG hierarchy and unpivoted coarse
-solver require the nonzero diagonal. CG requires a
-symmetric positive definite matrix; positive definiteness is not checked
-automatically. Normalize or otherwise remove the nullspace of an AKM
-system before solving. Convergence is not guaranteed for arbitrary
-matrices.
+The coefficient matrix must be a nonempty, square `Matrix::dgCMatrix` or
+symmetric `Matrix::dsCMatrix` with finite entries and a nonzero diagonal
+entry in every row. Symmetric storage is validated and expanded internally.
+The right-hand side can be a finite real numeric vector (including an
+integer vector), a one-column base numeric matrix, or a one-column
+double-precision `Matrix` object. Its length or row count must match the
+matrix dimension. Multiple right-hand sides, arrays with more than two
+dimensions, and logical or complex inputs are rejected.
+
+The selected AMG hierarchy and unpivoted coarse solver require the nonzero
+diagonal. CG requires a symmetric positive definite matrix; positive
+definiteness is not checked automatically. Normalize or otherwise remove
+the nullspace of an AKM system before solving. Convergence is not
+guaranteed for arbitrary matrices, and a converged result does not
+establish that a matrix is positive definite.
+
+Systems with at most 64 rows use direct coarse LU preconditioning and
+often converge in one iteration. This small-system behavior does not
+validate the assumptions of CG. Errors from AMGCL during hierarchy setup
+include the setup context and underlying diagnostic; a setup failure alone
+does not establish that the matrix is singular.
 
 Every solve returns `x`, `iterations`, AMGCL's residual estimate `error`, an
 independently computed relative Euclidean `residual`, `converged`, and the

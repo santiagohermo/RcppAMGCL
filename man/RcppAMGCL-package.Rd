@@ -10,8 +10,10 @@ CPU backend and optional OpenMP acceleration. Use
 \code{\link{amgcl_setup}} to reuse a preconditioner across right-hand sides.
 }
 \details{
-The package supports double-precision compressed sparse column matrices
-from \pkg{Matrix}. See \code{\link{amgcl_info}} for build capabilities.
+The package supports general and symmetric double-precision compressed
+sparse column matrices (\code{dgCMatrix} and \code{dsCMatrix}) from
+\pkg{Matrix}, with vector or one-column matrix right-hand sides.
+See \code{\link{amgcl_info}} for build capabilities.
 The installed \file{RcppAMGCL.h} header provides an R-independent C++
 interface for downstream code; the bundled AMGCL headers retain their
 upstream license notices.

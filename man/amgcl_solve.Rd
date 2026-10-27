@@ -6,11 +6,16 @@ amgcl_solve(A, b, solver = c("cg", "bicgstab"), tol = 1e-8,
             maxiter = 1000L, threads = 1L)
 }
 \arguments{
-  \item{A}{A nonempty, square \code{Matrix::dgCMatrix} with finite entries
-    and a nonzero diagonal entry in every row, or a reusable
+  \item{A}{A nonempty, square \code{Matrix::dgCMatrix} or symmetric
+    \code{Matrix::dsCMatrix} with finite entries and a nonzero diagonal
+    entry in every row, or a reusable
     \code{amgcl_solver} created by \code{\link{amgcl_setup}}.}
-  \item{b}{Finite numeric right-hand-side vector, of length equal to the
-    matrix dimension. Integer vectors are accepted and converted to doubles.}
+  \item{b}{A finite real numeric right-hand-side vector, including an
+    integer vector, of length equal to the matrix dimension. A one-column
+    base numeric matrix or one-column double-precision \pkg{Matrix} object
+    with the same number of rows is also accepted and converted to a vector.
+    Multiple columns, arrays with more than two dimensions, and logical or
+    complex inputs are rejected.}
   \item{solver}{\code{"cg"} or \code{"bicgstab"}. Must be omitted when
     \code{A} is a reusable solver.}
   \item{tol}{Finite positive tolerance for AMGCL's relative residual
@@ -28,7 +33,10 @@ either by constructing a solver for one call or reusing an existing solver.
 \details{
 Conjugate gradients require a symmetric positive definite matrix. The
 package does not automatically normalize singular systems, check positive
-definiteness, or guarantee convergence. Inspect \code{converged} and
+definiteness, or guarantee convergence. Successful convergence does not
+establish positive definiteness. Systems with at most 64 rows use direct
+coarse LU preconditioning and often converge in one iteration; see
+\code{\link{amgcl_setup}}. Inspect \code{converged} and
 \code{residual} before using a result. Every solve starts from a zero
 initial guess.
 
@@ -61,4 +69,10 @@ A <- methods::as(Matrix::bandSparse(10, k = c(-1, 0, 1),
 result <- amgcl_solve(A, rep(1, 10))
 result$x
 result$residual
+
+# Symmetric sparse storage and a one-column Matrix right-hand side.
+S <- Matrix::bandSparse(10, k = c(0, 1),
+    diagonals = list(rep(3, 10), rep(-1, 9)), symmetric = TRUE)
+rhs <- S \%*\% rep(1, 10)
+amgcl_solve(S, rhs)$x
 }

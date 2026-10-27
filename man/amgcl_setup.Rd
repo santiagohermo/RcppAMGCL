@@ -10,8 +10,10 @@ amgcl_setup(A, solver = c("cg", "bicgstab"), tol = 1e-8,
 \method{print}{amgcl_solver}(x, ...)
 }
 \arguments{
-  \item{A}{A nonempty, square \code{Matrix::dgCMatrix} containing finite
-    double-precision values and a nonzero diagonal entry in every row.}
+  \item{A}{A nonempty, square \code{Matrix::dgCMatrix} or symmetric
+    \code{Matrix::dsCMatrix} containing finite double-precision values and
+    a nonzero diagonal entry in every row. Symmetric storage is expanded
+    internally after validation.}
   \item{solver}{Iterative method: \code{"cg"} for conjugate gradients or
     \code{"bicgstab"} for stabilized bi-conjugate gradients.}
   \item{tol}{Finite positive convergence tolerance for AMGCL's relative
@@ -32,11 +34,18 @@ the solver, so subsequent changes to the R matrix do not change the solver.
 The package uses AMGCL's built-in CPU backend, smoothed aggregation and
 SPAI0 relaxation. A nonzero diagonal is required by the selected AMG
 hierarchy and its unpivoted coarse solver; matrices with a missing or zero
-diagonal entry are rejected. Conjugate gradients require a symmetric positive definite
-matrix. The package does not verify positive definiteness. BiCGStab accepts
+diagonal entry are rejected. Conjugate gradients require a symmetric
+positive definite matrix. The package does not verify positive definiteness,
+and convergence does not establish that this requirement is satisfied. BiCGStab accepts
 nonsymmetric systems, but convergence is not guaranteed for every matrix.
 Singular systems and nullspace constraints are not handled automatically;
 for example, AKM models must be normalized before solving.
+
+Systems with at most 64 rows use the direct coarse LU solver as their
+preconditioner. They often converge in one iteration, which does not
+validate the matrix's symmetry or positive definiteness. Errors from AMGCL
+during hierarchy setup include the setup context and underlying diagnostic;
+such a failure does not by itself establish that the matrix is singular.
 
 The solver owns its method, tolerance and iteration limit. These cannot be
 overridden in subsequent calls to \code{amgcl_solve()}; create a new solver
@@ -62,8 +71,8 @@ components as read-only. The print method returns the object invisibly.
 }
 \seealso{\code{\link{amgcl_solve}}, \code{\link{amgcl_info}}}
 \examples{
-A <- methods::as(Matrix::bandSparse(10, k = c(-1, 0, 1),
-    diagonals = list(rep(-1, 9), rep(3, 10), rep(-1, 9))), "dgCMatrix")
+A <- Matrix::bandSparse(10, k = c(0, 1),
+    diagonals = list(rep(3, 10), rep(-1, 9)), symmetric = TRUE)
 s <- amgcl_setup(A)
 print(s)
 amgcl_solve(s, rep(1, 10))$x

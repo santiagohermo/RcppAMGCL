@@ -14,6 +14,42 @@
     as.double(tol)
 }
 
+.amgcl_matrix <- function(A) {
+    if (inherits(A, "dsCMatrix")) {
+        methods::validObject(A)
+        # Expand the stored triangle without constructing a dense matrix.
+        A <- methods::as(A, "generalMatrix")
+    }
+    if (!inherits(A, "dgCMatrix")) {
+        stop("A must be a Matrix::dgCMatrix or Matrix::dsCMatrix.", call. = FALSE)
+    }
+    A
+}
+
+.amgcl_rhs <- function(b, n) {
+    dimensions <- dim(b)
+    if (!is.null(dimensions)) {
+        if (length(dimensions) != 2L || dimensions[2L] != 1L ||
+            !(is.matrix(b) || inherits(b, "dMatrix"))) {
+            stop("b must be a numeric vector or a single-column numeric matrix.",
+                 call. = FALSE)
+        }
+        if (inherits(b, "dMatrix")) {
+            methods::validObject(b)
+            b <- as.double(b)
+        } else {
+            # Retain the storage type until the numeric/complex checks below.
+            dim(b) <- NULL
+        }
+    }
+    if (!is.numeric(b) || is.complex(b) || length(b) != n ||
+        anyNA(b) || any(!is.finite(b))) {
+        stop("b must contain finite numeric values with length equal to nrow(A).",
+             call. = FALSE)
+    }
+    as.double(b)
+}
+
 .amgcl_validate_solver <- function(object) {
     required <- c("pointer", "n", "solver", "tol", "maxiter")
     valid <- is.list(object) && all(required %in% names(object)) &&
@@ -39,9 +75,7 @@
 
 amgcl_setup <- function(A, solver = c("cg", "bicgstab"), tol = 1e-8,
                         maxiter = 1000L, threads = 1L) {
-    if (!inherits(A, "dgCMatrix")) {
-        stop("A must be a Matrix::dgCMatrix.", call. = FALSE)
-    }
+    A <- .amgcl_matrix(A)
     solver <- match.arg(solver)
     tol <- .amgcl_tolerance(tol)
     maxiter <- .amgcl_positive_integer(maxiter, "maxiter")
@@ -64,24 +98,18 @@ amgcl_solve <- function(A, b, solver = c("cg", "bicgstab"), tol = 1e-8,
         object <- A
         n <- object$n
     } else {
-        if (!inherits(A, "dgCMatrix")) {
-            stop("A must be a Matrix::dgCMatrix.", call. = FALSE)
-        }
+        A <- .amgcl_matrix(A)
         n <- nrow(A)
         if (length(n) != 1L || is.na(n) || n < 1L) {
             stop("A must be a nonempty square matrix.", call. = FALSE)
         }
     }
-    if (!is.numeric(b) || is.complex(b) || !is.null(dim(b)) || length(b) != n ||
-        anyNA(b) || any(!is.finite(b))) {
-        stop("b must be a finite numeric vector with length equal to nrow(A).",
-             call. = FALSE)
-    }
+    b <- .amgcl_rhs(b, n)
     if (!reusable) {
         object <- amgcl_setup(A, solver = match.arg(solver), tol = tol,
                               maxiter = maxiter, threads = threads)
     }
-    amgcl_solve_cpp(object$pointer, as.double(b), threads)
+    amgcl_solve_cpp(object$pointer, b, threads)
 }
 
 amgcl_info <- function() {
