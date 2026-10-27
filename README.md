@@ -130,6 +130,7 @@ repository. RcppAMGCL brings that library to R through Rcpp, bundling
 AMGCL 1.4.5 with its original license notices and the compatibility
 patches documented in [inst/AMGCL-VERSION](inst/AMGCL-VERSION).
 
-GPT-6 Astra wrote the R interface code in [R/](R/) that connects R users
-to the C++ solvers through Rcpp. Fable 5.1 provided feedback on the
-package.
+GPT-6 Astra, working with delegated coding agents, implemented the
+RcppAMGCL wrapper and its R and C++ interfaces, build configuration,
+tests, documentation, and benchmark tooling. Fable 5.1 provided review
+and feedback on the package.
