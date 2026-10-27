@@ -36,16 +36,14 @@ SPAI0 relaxation. A nonzero diagonal is required by the selected AMG
 hierarchy and its unpivoted coarse solver; matrices with a missing or zero
 diagonal entry are rejected. Conjugate gradients require a symmetric
 positive definite matrix. The package does not verify positive definiteness,
-and convergence does not establish that this requirement is satisfied. BiCGStab accepts
-nonsymmetric systems, but convergence is not guaranteed for every matrix.
-Singular systems and nullspace constraints are not handled automatically;
-for example, AKM models must be normalized before solving.
+and convergence does not establish that this requirement is satisfied.
+BiCGStab accepts nonsymmetric systems. Convergence is not guaranteed;
+singular systems and nullspace constraints are not handled automatically.
 
 Systems with at most 64 rows use the direct coarse LU solver as their
-preconditioner. They often converge in one iteration, which does not
-validate the matrix's symmetry or positive definiteness. Errors from AMGCL
-during hierarchy setup include the setup context and underlying diagnostic;
-such a failure does not by itself establish that the matrix is singular.
+preconditioner and often converge in one iteration. Hierarchy setup errors
+include the setup context and underlying AMGCL diagnostic; they do not by
+themselves establish that the matrix is singular.
 
 The solver owns its method, tolerance and iteration limit. These cannot be
 overridden in subsequent calls to \code{amgcl_solve()}; create a new solver

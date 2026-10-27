@@ -1,0 +1,8 @@
+Configurations: 30
+Samples: 90
+Failed samples: 0
+Child timeout: 300 seconds; OMP_THREAD_LIMIT: 8
+Total and batch totals are within-repetition sums, not sums of independent medians.
+Per-case logs, session/BLAS/compiler metadata, and artifact hashes: C:/Users/sher0042/Documents/GitHub/RccpAMCGL/.local/compare-solvers/windows-comparison.csv.cases
+BLAS environment requests one thread; effective vendor thread counts are not independently queried.
+Memory is whole-process high-water RSS including warmup and validation, not incremental factor memory.

@@ -31,20 +31,17 @@ Solve \eqn{Ax = b} with AMG-preconditioned conjugate gradients or BiCGStab,
 either by constructing a solver for one call or reusing an existing solver.
 }
 \details{
-Conjugate gradients require a symmetric positive definite matrix. The
-package does not automatically normalize singular systems, check positive
-definiteness, or guarantee convergence. Successful convergence does not
-establish positive definiteness. Systems with at most 64 rows use direct
-coarse LU preconditioning and often converge in one iteration; see
-\code{\link{amgcl_setup}}. Inspect \code{converged} and
-\code{residual} before using a result. Every solve starts from a zero
-initial guess.
+Every solve starts from a zero initial guess. Inspect \code{converged} and
+\code{residual} before using a result. CG requires a symmetric positive
+definite matrix; convergence does not validate that assumption. See
+\code{\link{amgcl_setup}} for matrix requirements, the direct coarse LU
+preconditioner used for systems with at most 64 rows, and setup errors.
 
 When \code{A} is a matrix, \code{threads} controls both setup and solving.
 When it is a reusable solver, \code{threads} controls this solve only; the
 setup thread count is not retained. OpenMP settings are restored after each
 operation. See \code{\link{amgcl_setup}} for thread and object-lifetime
-details. CRAN tests and examples use at most two threads.
+details.
 }
 \value{
 A list with components:

@@ -1,113 +1,51 @@
 # RcppAMGCL
 
-RcppAMGCL solves sparse linear systems in R with AMGCL's built-in CPU
-backend. Version 0.1.0 provides AMG-preconditioned conjugate gradients (CG)
-and BiCGStab, reusable solver objects, and optional OpenMP acceleration for
-both setup and solving. It also installs an R-independent C++ interface for
-use in downstream projects.
+A minimal Rcpp wrapper for AMGCL: sparse CG and BiCGStab solvers with
+algebraic multigrid preconditioning, reusable solver objects, optional
+OpenMP, and an R-independent C++ interface.
 
-The initial scope is a foundation for larger sparse estimation tasks such
-as AKM. Singular systems, identification constraints, fixed-effect
-construction, and inference are outside this version's scope.
+## Install
 
-## Install from source
-
-Install R 4.3.0 or later, the `Rcpp` and `Matrix` packages, and the compiler toolchain for
-your platform. Rtools is required on Windows. From the repository directory:
+Requires R 4.3.0 or later, `Rcpp`, `Matrix`, and an R compiler toolchain
+(Rtools on Windows). From this repository:
 
 ```sh
 R CMD build .
 R CMD INSTALL RcppAMGCL_0.1.0.tar.gz
 ```
 
-No Boost dependency is required. AMGCL 1.4.5 is bundled at commit
-`dde264f0f8d5d0a292a3bb3709952cc4e004604e`; its MIT license is retained in
-[`inst/licenses/AMGCL-LICENSE.md`](inst/licenses/AMGCL-LICENSE.md).
+OpenMP is detected automatically. Set `RCPPAMGCL_OPENMP=on` to require it or
+`RCPPAMGCL_OPENMP=off` to build without it. Both builds expose the same API.
 
-OpenMP is detected with R's compiler flags during installation. The
-`RCPPAMGCL_OPENMP` environment variable accepts `auto` (the default), `on`
-(require OpenMP support), or `off` (compile a serial build). For example,
-in a POSIX shell:
-
-```sh
-RCPPAMGCL_OPENMP=off R CMD INSTALL RcppAMGCL_0.1.0.tar.gz
-RCPPAMGCL_OPENMP=on R CMD INSTALL RcppAMGCL_0.1.0.tar.gz
-```
-
-In PowerShell, set `$env:RCPPAMGCL_OPENMP = "off"` before running the install
-command. A serial build exposes the same R interface.
-
-## Solve in R
+## Use from R
 
 ```r
 library(RcppAMGCL)
 
-A <- methods::as(Matrix::bandSparse(
-  1000, k = c(-1, 0, 1),
-  diagonals = list(rep(-1, 999), rep(3, 1000), rep(-1, 999))
-), "dgCMatrix")
+A <- Matrix::bandSparse(1000, k = c(0, 1),
+  diagonals = list(rep(3, 1000), rep(-1, 999)), symmetric = TRUE)
 b <- rep(1, nrow(A))
 
 fit <- amgcl_solve(A, b)
+fit$x
 fit$converged
 fit$residual
-head(fit$x)
 
-# Reuse the matrix and AMG hierarchy for another right-hand side.
-s <- amgcl_setup(A, solver = "cg", tol = 1e-8, maxiter = 1000)
-fit1 <- amgcl_solve(s, b)
-fit2 <- amgcl_solve(s, seq_len(nrow(A)))
-
-# For a nonsymmetric system, select BiCGStab.
-B <- A + Matrix::sparseMatrix(i = 1, j = 2, x = 0.2, dims = dim(A))
-fit3 <- amgcl_solve(B, b, solver = "bicgstab")
-
-# Symmetric sparse storage and one-column matrix right-hand sides work too.
-S <- Matrix::bandSparse(
-  1000, k = c(0, 1),
-  diagonals = list(rep(3, 1000), rep(-1, 999)), symmetric = TRUE
-)
-rhs <- S %*% rep(1, nrow(S))
-fit4 <- amgcl_solve(S, rhs)
+# Reuse setup for another right-hand side.
+s <- amgcl_setup(A, solver = "cg", tol = 1e-8)
+amgcl_solve(s, 2 * b)$x
 ```
 
-The coefficient matrix must be a nonempty, square `Matrix::dgCMatrix` or
-symmetric `Matrix::dsCMatrix` with finite entries and a nonzero diagonal
-entry in every row. Symmetric storage is validated and expanded internally.
-The right-hand side can be a finite real numeric vector (including an
-integer vector), a one-column base numeric matrix, or a one-column
-double-precision `Matrix` object. Its length or row count must match the
-matrix dimension. Multiple right-hand sides, arrays with more than two
-dimensions, and logical or complex inputs are rejected.
+`A` accepts `dgCMatrix` or `dsCMatrix`; `b` accepts a real numeric vector
+or one-column numeric matrix. Use `solver = "bicgstab"` for nonsymmetric
+systems. CG requires a symmetric positive definite matrix, which is not
+verified automatically. Matrices must be square, finite, and have nonzero
+diagonal entries. Check `converged` and the independently computed
+`residual` before using a result. Reusable solvers are process-local and
+cannot be saved and restored. See `?amgcl_setup` and `?amgcl_solve` for the
+complete input and lifetime contracts.
 
-The selected AMG hierarchy and unpivoted coarse solver require the nonzero
-diagonal. CG requires a symmetric positive definite matrix; positive
-definiteness is not checked automatically. Normalize or otherwise remove
-the nullspace of an AKM system before solving. Convergence is not
-guaranteed for arbitrary matrices, and a converged result does not
-establish that a matrix is positive definite.
-
-Systems with at most 64 rows use direct coarse LU preconditioning and
-often converge in one iteration. This small-system behavior does not
-validate the assumptions of CG. Errors from AMGCL during hierarchy setup
-include the setup context and underlying diagnostic; a setup failure alone
-does not establish that the matrix is singular.
-
-Every solve returns `x`, `iterations`, AMGCL's residual estimate `error`, an
-independently computed relative Euclidean `residual`, `converged`, and the
-effective requested thread cap `threads`. For a zero right-hand side,
-`residual` is the absolute residual norm. `converged` compares this
-independent residual with the configured tolerance. Inspect these fields
-before relying on a solution.
-
-Reusable solvers own a copy of the matrix and retain their method,
-tolerance and iteration limit. Create a new solver to change those
-settings. Their external pointers are process-local: do not save/restore
-them, send them to another R process, or share one object concurrently.
-Recreate the solver from its matrix in each process. R releases the native
-storage when the object is garbage collected.
-
-## Thread control
+## Threads
 
 ```r
 amgcl_info()
@@ -115,36 +53,38 @@ s <- amgcl_setup(A, threads = 2)
 fit <- amgcl_solve(s, b, threads = 2)
 ```
 
-Both entry points default to `threads = 1`. Set `threads` explicitly for
-each operation that should use parallelism; a reusable solver does not
-retain the setup thread count. The package caps requests by processor
-capacity and `OMP_THREAD_LIMIT`. Set that environment variable before
-starting R. A serial build always uses one thread.
+Each operation defaults to one thread. Requests are capped by processor
+capacity and `OMP_THREAD_LIMIT`; serial builds use one thread. OpenMP
+settings are restored after each operation. Set `OMP_THREAD_LIMIT` before
+starting R.
 
-OpenMP thread-count and dynamic-thread settings are scoped to each
-operation and restored afterwards, including on errors. Worker threads
-never call the R API. The result's `threads` field is a requested cap, not
-a measured team size; runtime constraints may cause OpenMP to use fewer
-workers.
+## Performance
 
-`amgcl_info()` reports `openmp`, `max_threads`, `thread_limit`,
-`current_threads`, and `amgcl_version`. Tests and examples use at most two
-threads. The separate benchmark script under `tools/` measures setup and
-solve times for 1, 2, 4, and 8 threads on larger sparse matrices.
+Median seconds on an Intel Core Ultra 7 265H, Windows 11, R 4.5.3 and
+Matrix 1.7-4 with R's supplied BLAS. Both methods reuse setup for ten
+distinct right-hand sides; three repetitions per configuration.
 
-```sh
-Rscript tools/benchmark.R benchmarks/results-local.csv 3 160000
-```
+| Poisson system | Method | Threads | Setup + 1 RHS (s) | Setup + 10 RHS (s) |
+| --- | --- | ---: | ---: | ---: |
+| 2D, 100,489 unknowns | AMGCL CG | 1 | 0.237 | 1.397 |
+| 2D, 100,489 unknowns | AMGCL CG | 8 | 0.126 | 0.684 |
+| 2D, 100,489 unknowns | Matrix Cholesky | 1 | 0.321 | 0.459 |
+| 3D, 103,823 unknowns | AMGCL CG | 1 | 0.348 | 2.109 |
+| 3D, 103,823 unknowns | AMGCL CG | 8 | 0.087 | 0.462 |
+| 3D, 103,823 unknowns | Matrix Cholesky | 1 | 19.857 | 20.516 |
 
-Recorded measurements and reproduction details are in
-[`benchmarks/README.md`](benchmarks/README.md).
+All solves met a relative residual target of `1e-8`; Cholesky achieved
+much tighter accuracy. AMGCL had cheaper setup in these cases, while
+Cholesky was faster for ten RHS in 2D. These deterministic grid problems
+suit AMG; results depend on the matrix, BLAS, hardware and accuracy target.
 
-## C++ use
+See [benchmark methods and results](benchmarks/README.md) for matrix sizes,
+setup and solve timings, totals, and reproduction commands.
 
-The installed `RcppAMGCL.h` exposes the `rcppamgcl` namespace with owned CSR
-matrix storage, reusable solvers, and scoped thread controls. The header
-does not depend on R or Rcpp. Downstream R packages can add `RcppAMGCL` to
-`LinkingTo` and include:
+## Use from C++
+
+Add `RcppAMGCL` to a downstream R package's `LinkingTo` field and include
+`RcppAMGCL.h`. The header also works in standalone C++ without R or Rcpp:
 
 ```cpp
 #include <RcppAMGCL.h>
@@ -152,39 +92,17 @@ does not depend on R or Rcpp. Downstream R packages can add `RcppAMGCL` to
 rcppamgcl::Matrix A;
 A.n = 2;
 A.ptr = {0, 2, 4};       // CSR row pointers
-A.col = {0, 1, 0, 1};    // Zero-based columns, sorted within each row
+A.col = {0, 1, 0, 1};    // Sorted, zero-based column indices
 A.val = {2, -1, -1, 2};
-
 rcppamgcl::Solver solver(std::move(A), "cg", 1e-8, 1000, 1);
 auto result = solver.solve(std::vector<double>{1, 0}, 1);
-// result.x is {2/3, 1/3}; inspect result.converged and result.residual.
 ```
 
-The package uses R's default C++ compiler standard. The installed header
-and bundled AMGCL code are also compatible with C++14. Downstream code must
-enable and link OpenMP in its own build to use it there; the installed R
-package's build mode does not automatically set compiler flags for another
-package. See the installed header for the C++ API. A standalone project
-can include the installed package's `include` directory without linking
-to the R package shared library.
+The header is compatible with C++14. Downstream builds supply their own
+OpenMP compiler and linker flags; no link to the R package library is
+required. See the [API and build contract](INTERFACE.md).
 
-## Development
-
-```sh
-R CMD build .
-R CMD check --as-cran RcppAMGCL_0.1.0.tar.gz
-```
-
-GitHub Actions covers Linux, Windows, and macOS with OpenMP enabled and
-disabled. These jobs explicitly check the installed build's OpenMP
-capability. The repository is initially private; CI run results, rather
-than the presence of the workflow, establish whether each platform passes.
-The `URL` and `BugReports` fields are omitted from `DESCRIPTION` while the
-repository is private, because unauthenticated CRAN checks cannot access
-it. Add the public repository and issue tracker URLs when publishing.
-
-See [`validation/README.md`](validation/README.md) for executed checks,
-the tested source revision, and the remaining CRAN submission note.
-
-The R wrapper is MIT licensed. Bundled AMGCL retains its upstream license
-and copyright notices.
+AMGCL [1.4.5 is pinned](inst/AMGCL-VERSION) and bundled with its
+[MIT license](inst/licenses/AMGCL-LICENSE.md); Boost is not required.
+The R wrapper is also MIT licensed. See [validation](validation/README.md)
+for executed checks and platform results.

@@ -1,33 +1,63 @@
-# Implementation contract
+# API and build contract
 
-Package RcppAMGCL 0.1.0; R >= 4.3.0 with R's default C++ compiler standard;
-installed C++ header also compatible with C++14. Rcpp and Matrix are the only
-non-base R dependencies (methods is a base R package).
-Vendor AMGCL 1.4.5 pinned to its resolved tag commit, retain licence; define AMGCL_NO_BOOST.
+## R interface
 
-Public R API:
-- `amgcl_setup(A, solver = c("cg", "bicgstab"), tol = 1e-8, maxiter = 1000L, threads = 1L)` accepts dgCMatrix or dsCMatrix and returns class `amgcl_solver` wrapping a tagged external pointer and metadata. Validate symmetric storage before expansion with `methods::as(A, "generalMatrix")`; native setup receives dgCMatrix.
-- `amgcl_solve(A, b, solver = c("cg", "bicgstab"), tol = 1e-8, maxiter = 1000L, threads = 1L)` accepts dgCMatrix, dsCMatrix or amgcl_solver as A. Reusable object owns solver/tol/maxiter; threads applies to each operation. Returns list x, iterations, error (AMGCL estimate), residual (independently computed relative 2-norm, absolute for zero b), converged, threads (effective requested cap).
-- `b` accepts a finite real numeric vector (including integer), a one-column base numeric matrix, or a one-column real double Matrix object. Validate shape and type before flattening; reject multiple columns, arrays with more than two dimensions, and logical/complex inputs. Its length or row count must equal the coefficient matrix dimension.
-- `amgcl_info()` returns openmp logical, max_threads capacity (min num processors, thread limit; >=1), thread_limit, current_threads (calling-task setting), amgcl_version.
-- print.amgcl_solver is concise; objects process-local, cannot be saved/restored or shared concurrently.
+```r
+amgcl_setup(A, solver = c("cg", "bicgstab"), tol = 1e-8,
+            maxiter = 1000L, threads = 1L)
+amgcl_solve(A, b, solver = c("cg", "bicgstab"), tol = 1e-8,
+            maxiter = 1000L, threads = 1L)
+amgcl_info()
+```
 
-Native Rcpp exports (root generates RcppExports):
-- `amgcl_setup_cpp(Rcpp::S4 A, std::string solver, double tol, int maxiter, int threads)` returns tagged external pointer (R layer wraps as list pointer, n, solver, tol, maxiter).
-- `amgcl_solve_cpp(SEXP pointer, Rcpp::NumericVector b, int threads)` returns result list above.
-- `amgcl_info_cpp()` returns info list above.
+`A` is a nonempty square `dgCMatrix` or `dsCMatrix` with finite values and
+nonzero diagonal entries. Symmetric storage is validated before expansion.
+`b` is a finite real numeric vector, a one-column base numeric matrix, or
+a one-column double-precision `Matrix` object of matching size. Logical,
+complex, multiple-column, and higher-dimensional inputs are rejected.
 
-C++ integration owns src/solver.cpp and inst/include/RcppAMGCL.h (R-independent reusable interface). Prefer smoothed aggregation with SPAI0 for symmetric CG-compatible preconditioner. Correct CSC->CSR conversion, owned storage, strict validation, null/tag pointer checks, finite result checks. Thread guard saves/restores calling task's OpenMP num_threads and dynamic settings even on exceptions; cap threads by OMP_THREAD_LIMIT and processor capacity, serial fallback. No R API in parallel regions.
+Setup returns an `amgcl_solver` containing a tagged external pointer and
+metadata `n`, `solver`, `tol`, and `maxiter`. Solve accepts either a matrix
+or this reusable object. Its method, tolerance and iteration limit are
+fixed at setup; `threads` applies separately to each operation. Objects own
+their matrix storage and are process-local; serialization and concurrent
+use of one object are unsupported.
 
-Systems with at most 64 rows use direct coarse LU preconditioning and often
-converge in one iteration; convergence never establishes symmetry or positive
-definiteness. Hierarchy setup errors add context while preserving AMGCL's
-diagnostic, without classifying every failure as singularity.
-Retain owned original matrix storage at AMG's finest level for independent
-residuals, without a redundant solver-level CSR copy. Preserve 64-bit index capacity.
+Solve returns `x`, `iterations`, AMGCL's estimate `error`, independently
+computed relative Euclidean `residual` (absolute for zero `b`),
+`converged = residual <= tol`, and the effective requested cap `threads`.
+CG requires a symmetric positive definite matrix; convergence does not
+validate that assumption. Systems with at most 64 rows use direct coarse
+LU preconditioning and often converge in one iteration. Singular systems
+and nullspace constraints are not handled automatically.
 
-R interface agent owns DESCRIPTION, NAMESPACE, R/ (except generated RcppExports.R), man/, README.md, LICENSE, NEWS.md. Author from git: Santiago Hermo <santiago.hermo@monash.edu>. MIT + file LICENSE; acknowledge vendored author in Authors@R. Documentation must state CG requires SPD; no singular-system handling yet (AKM must normalize/drop nullspace).
+`amgcl_info()` returns `openmp`, `max_threads`, `thread_limit`,
+`current_threads`, and `amgcl_version`. Thread requests are capped by
+processor capacity and `OMP_THREAD_LIMIT`. Calling-task OpenMP thread and
+dynamic settings are restored on success or error. Worker threads never
+call the R API. CRAN tests and examples use at most two threads.
 
-Infrastructure agent owns configure, configure.win, cleanup, cleanup.win, src/Makevars.in, tests/, .github/, .Rbuildignore, .gitignore, tools/ benchmark/check helpers. Use R's SHLIB_OPENMP_CXXFLAGS, compile/link probe; RCPPAMGCL_OPENMP=auto|on|off, optional fallback. Six CI combinations Linux/Windows/macOS x on/off; explicitly verify capability; CRAN tests/examples <=2 threads. Base R test script preferred to avoid dependency. Benchmark setup/solve separately 1,2,4,8 threads, default >=100k unknowns, outside tests.
+## C++ interface and build
 
-Root owns vendoring, local environment/build, generated exports, Git repository/remote, integration review and fixes. Coordinate before changing this interface.
+The R-independent `RcppAMGCL.h` exposes `rcppamgcl::Matrix` (owned CSR),
+`rcppamgcl::Solver`, `Solver::solve()`, and `thread_info()`. The built-in CPU
+backend uses smoothed aggregation and SPAI0 relaxation. The hierarchy owns
+the original matrix used for independent residuals; no second solver-level
+CSR copy is retained. C++ indices retain 64-bit capacity. Setup exceptions
+include context and preserve the underlying AMGCL diagnostic.
+
+Native Rcpp exports are `amgcl_setup_cpp(A, solver, tol, maxiter, threads)`,
+`amgcl_solve_cpp(pointer, b, threads)`, and `amgcl_info_cpp()`. The R layer
+passes validated general sparse storage and a double vector to these
+functions. Native code validates matrix storage and pointer tags/addresses.
+
+Requires R >= 4.3.0 with R's default C++ compiler standard; the installed
+header also supports C++14. Rcpp and Matrix are the only non-base R
+dependencies. AMGCL 1.4.5 is pinned in `inst/AMGCL-VERSION`, with license
+notices retained and `AMGCL_NO_BOOST` enabled.
+
+`RCPPAMGCL_OPENMP=auto|on|off` controls the compile/link probe using R's
+`SHLIB_OPENMP_CXXFLAGS`. `auto` falls back to serial; `on` requires OpenMP.
+Downstream builds select their own compiler and OpenMP flags. CI covers
+Linux, Windows and macOS with OpenMP enabled and disabled; executed results
+are recorded under `validation/`. Benchmarks are separate from CRAN tests.
