@@ -41,7 +41,7 @@ jobs:
           brew install libomp
           omp_prefix="$(brew --prefix libomp)"
           mkdir -p "$HOME/.R"
-          printf 'SHLIB_OPENMP_CXXFLAGS = -Xclang -fopenmp -I%s/include -L%s/lib -Wl,-rpath,%s/lib -lomp\n' \
+          printf 'SHLIB_OPENMP_CXXFLAGS = -Xclang -fopenmp\nCPPFLAGS += -I%s/include\nLDFLAGS += -L%s/lib -Wl,-rpath,%s/lib -lomp\n' \
             "$omp_prefix" "$omp_prefix" "$omp_prefix" >> "$HOME/.R/Makevars"
       - name: Install and verify requested backend
         shell: Rscript {0}
@@ -53,6 +53,9 @@ jobs:
           stopifnot(identical(info$openmp, Sys.getenv("RCPPAMGCL_OPENMP") == "on"))
           stopifnot(info$max_threads >= 1L, info$max_threads <= 2L)
           source("tests/solver.R", echo = TRUE)
+      - name: Check standalone C++ interface and OpenMP restoration
+        shell: bash
+        run: bash tools/check-cpp.sh "${RCPPAMGCL_OPENMP}"
       - uses: r-lib/actions/check-r-package@v2
         with:
           args: 'c("--as-cran", "--no-manual")'

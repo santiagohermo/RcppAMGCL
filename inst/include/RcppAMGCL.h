@@ -28,6 +28,13 @@
 #include <omp.h>
 #endif
 
+// Upstream intentionally leaves OpenMP pragmas unguarded for serial builds.
+// Silence only that expected warning while parsing the vendored headers.
+#if !defined(_OPENMP) && (defined(__GNUC__) || defined(__clang__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
+
 #include <amgcl/adapter/crs_tuple.hpp>
 #include <amgcl/amg.hpp>
 #include <amgcl/backend/builtin.hpp>
@@ -36,6 +43,10 @@
 #include <amgcl/relaxation/spai0.hpp>
 #include <amgcl/solver/bicgstab.hpp>
 #include <amgcl/solver/cg.hpp>
+
+#if !defined(_OPENMP) && (defined(__GNUC__) || defined(__clang__))
+#pragma GCC diagnostic pop
+#endif
 
 namespace rcppamgcl {
 

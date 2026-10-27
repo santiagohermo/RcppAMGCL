@@ -15,10 +15,8 @@ Description: Solve sparse linear systems using conjugate gradients or
     a reusable C++ interface for downstream packages.
 License: MIT + file LICENSE
 Encoding: UTF-8
-Depends: R (>= 3.6.0)
+Depends: R (>= 4.3.0)
 Imports: Matrix, methods, Rcpp
 LinkingTo: Rcpp
-SystemRequirements: C++14, GNU make; OpenMP (optional)
+SystemRequirements: GNU make; OpenMP (optional)
 NeedsCompilation: yes
-URL: https://github.com/santiagohermo/RcppAMGCL
-BugReports: https://github.com/santiagohermo/RcppAMGCL/issues

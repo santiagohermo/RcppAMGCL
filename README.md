@@ -12,7 +12,7 @@ construction, and inference are outside this version's scope.
 
 ## Install from source
 
-Install R, the `Rcpp` and `Matrix` packages, and the compiler toolchain for
+Install R 4.3.0 or later, the `Rcpp` and `Matrix` packages, and the compiler toolchain for
 your platform. Rtools is required on Windows. From the repository directory:
 
 ```sh
@@ -132,7 +132,8 @@ auto result = solver.solve(std::vector<double>{1, 0}, 1);
 // result.x is {2/3, 1/3}; inspect result.converged and result.residual.
 ```
 
-The header and bundled AMGCL code compile in C++14. Downstream code must
+The package uses R's default C++ compiler standard. The installed header
+and bundled AMGCL code are also compatible with C++14. Downstream code must
 enable and link OpenMP in its own build to use it there; the installed R
 package's build mode does not automatically set compiler flags for another
 package. See the installed header for the C++ API. A standalone project
@@ -150,6 +151,9 @@ GitHub Actions covers Linux, Windows, and macOS with OpenMP enabled and
 disabled. These jobs explicitly check the installed build's OpenMP
 capability. The repository is initially private; CI run results, rather
 than the presence of the workflow, establish whether each platform passes.
+The `URL` and `BugReports` fields are omitted from `DESCRIPTION` while the
+repository is private, because unauthenticated CRAN checks cannot access
+it. Add the public repository and issue tracker URLs when publishing.
 
 The R wrapper is MIT licensed. Bundled AMGCL retains its upstream license
 and copyright notices.

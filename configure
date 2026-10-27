@@ -1,5 +1,5 @@
 #!/bin/sh
-# Probe with R's own build machinery: this honours CXX14, Makevars, and the
+# Probe with R's own build machinery: this honours CXX, Makevars, and the
 # platform's OpenMP flags, and tests linking without running target code.
 set -eu
 
@@ -28,7 +28,7 @@ cleanup_probe() {
 trap cleanup_probe EXIT HUP INT TERM
 : > config.log
 probe() {
-    printf 'CXX_STD = CXX14\nPKG_CXXFLAGS = %s\nPKG_LIBS = %s\n' \
+    printf 'PKG_CXXFLAGS = %s\nPKG_LIBS = %s\n' \
         "$1" "$1" > "$probe_dir/Makevars"
     cp "$probe_dir/Makevars" "$probe_dir/Makevars.win"
     rm -f "$probe_dir/conftest.o" "$probe_dir/conftest.so" \
@@ -48,7 +48,7 @@ extern "C" int rcppamgcl_openmp_probe() {
     return count + omp_get_thread_limit();
 }
 EOF
-    echo "configure: checking C++14 OpenMP compilation and linking"
+    echo "configure: checking C++ OpenMP compilation and linking"
     if probe '$(SHLIB_OPENMP_CXXFLAGS)'; then
         openmp_flags='$(SHLIB_OPENMP_CXXFLAGS)'
         disable_openmp=
@@ -79,7 +79,7 @@ EOF
         openmp_flags=-fno-openmp
     else
         cat config.log >&2
-        echo "configure: cannot compile a serial C++14 backend; check compiler flags" >&2
+        echo "configure: cannot compile a serial C++ backend; check compiler flags" >&2
         exit 1
     fi
 fi
