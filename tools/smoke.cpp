@@ -64,6 +64,90 @@ int main(int argc, char **argv) {
             require(caught, "Invalid RHS length was accepted");
         }
 
+        // Large residual reduction, including a final one-row partial block.
+        // A dominant last component makes dropping that block detectable in
+        // the RHS norm. Reuse one hierarchy to keep the smoke test inexpensive.
+        {
+            const std::size_t n = 32769;
+            rcppamgcl::Matrix A;
+            A.n = n;
+            A.ptr.reserve(n + 1);
+            A.col.reserve(3 * n - 2);
+            A.val.reserve(3 * n - 2);
+            A.ptr.push_back(0);
+            std::vector<double> reference(n), base_rhs(n);
+            for (std::size_t row = 0; row < n; ++row) {
+                if (row) { A.col.push_back(row - 1); A.val.push_back(-1); }
+                A.col.push_back(row); A.val.push_back(3);
+                if (row + 1 < n) { A.col.push_back(row + 1); A.val.push_back(-1); }
+                A.ptr.push_back(A.col.size());
+                reference[row] = std::sin((row + 1) / 17.0) + std::cos((row + 1) / 43.0);
+            }
+            reference.back() += 1000;
+            for (std::size_t row = 0; row < n; ++row) {
+                base_rhs[row] = 3 * reference[row];
+                if (row) base_rhs[row] -= reference[row - 1];
+                if (row + 1 < n) base_rhs[row] -= reference[row + 1];
+            }
+            rcppamgcl::Solver solver(std::move(A), "cg", 1e-10, 1000, 2);
+            require(rcppamgcl::thread_info().current_threads == before.current_threads,
+                    "Large setup did not restore the OpenMP setting");
+            for (double scale : {1e-200, 1.0, 1e200}) {
+                std::vector<double> rhs(n);
+                double normalization = 0;
+                for (std::size_t row = 0; row < n; ++row) {
+                    rhs[row] = base_rhs[row] * scale;
+                    normalization = std::max(normalization, std::abs(rhs[row]));
+                }
+                for (int requested : {1, 2}) {
+                    auto result = solver.solve(rhs, requested);
+                    long double residual_norm = 0, rhs_norm = 0;
+                    long double solution_error = 0, reference_norm = 0;
+                    for (std::size_t row = 0; row < n; ++row) {
+                        // Independent tridiagonal product, normalized before
+                        // arithmetic to avoid overflow and underflow.
+                        long double ax = 3 * (result.x[row] / normalization);
+                        if (row) ax -= result.x[row - 1] / normalization;
+                        if (row + 1 < n) ax -= result.x[row + 1] / normalization;
+                        const long double b = rhs[row] / normalization;
+                        residual_norm = std::hypot(residual_norm, b - ax);
+                        rhs_norm = std::hypot(rhs_norm, b);
+                        solution_error = std::hypot(solution_error,
+                            static_cast<long double>(result.x[row]) / scale - reference[row]);
+                        reference_norm = std::hypot(reference_norm,
+                                                   static_cast<long double>(reference[row]));
+                    }
+                    const double independent = static_cast<double>(residual_norm / rhs_norm);
+                    require(result.converged && std::isfinite(result.error) &&
+                            std::isfinite(result.residual) && result.residual <= 1e-10,
+                            "Large scaled solve did not converge with finite norms");
+                    require(solution_error / reference_norm < 1e-8,
+                            "Large scaled solve returned the wrong solution");
+                    require(std::abs(result.residual - independent) <=
+                            128 * std::numeric_limits<double>::epsilon() + 1e-5 * independent,
+                            "Large residual disagrees with the independent calculation");
+                    require(result.threads == std::min(requested, before.max_threads),
+                            "Large solve did not respect the thread limit");
+                    require(rcppamgcl::thread_info().current_threads == before.current_threads,
+                            "Large solve did not restore the OpenMP setting");
+#ifdef _OPENMP
+                    require(omp_get_dynamic() == 1,
+                            "Large solve did not restore the dynamic OpenMP setting");
+#endif
+                }
+            }
+            for (int requested : {1, 2}) {
+                auto zero = solver.solve(std::vector<double>(n, 0), requested);
+                require(zero.converged && zero.residual == 0 && zero.error == 0 &&
+                        zero.iterations == 0 &&
+                        std::all_of(zero.x.begin(), zero.x.end(), [](double x) { return x == 0; }),
+                        "Large zero RHS did not return the trivial solution");
+                require(zero.threads == std::min(requested, before.max_threads) &&
+                        rcppamgcl::thread_info().current_threads == before.current_threads,
+                        "Large zero RHS did not respect or restore thread settings");
+            }
+        }
+
         // Nonsymmetric CSC detects accidental transposition in the adapter.
         const int csc_p[] = {0, 2, 5, 7};
         const int csc_i[] = {0, 1, 0, 1, 2, 1, 2};

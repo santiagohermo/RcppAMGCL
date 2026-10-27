@@ -62,6 +62,53 @@ for (solver in c("cg", "bicgstab")) {
     expect_error(amgcl_solve(restored, b))
 }
 
+# Exercise the large residual reduction with a final one-row partial block.
+# The last component dominates the RHS norm, so omitting that block changes
+# the reported relative residual measurably even after convergence.
+local({
+    large_n <- 32769L
+    rows <- seq_len(large_n)
+    edges <- seq_len(large_n - 1L)
+    large <- Matrix::sparseMatrix(i = c(rows, edges, edges + 1L),
+                                  j = c(rows, edges + 1L, edges),
+                                  x = c(rep(3, large_n), rep(-1, 2L * length(edges))),
+                                  dims = c(large_n, large_n))
+    reference <- sin(rows / 17) + cos(rows / 43)
+    reference[large_n] <- reference[large_n] + 1000
+    rhs <- as.numeric(large %*% reference)
+    state <- amgcl_info()
+    solver <- amgcl_setup(large, tol = 1e-10, threads = 2L)
+    stopifnot(identical(amgcl_info()$current_threads, state$current_threads))
+    for (scale in c(1e-200, 1, 1e200)) {
+        scaled_rhs <- rhs * scale
+        rhs_scale <- max(abs(scaled_rhs))
+        normalized_rhs <- scaled_rhs / rhs_scale
+        for (threads in c(1L, 2L)) {
+            result <- amgcl_solve(solver, scaled_rhs, threads = threads)
+            # Scale before both multiplication and squaring: this independent
+            # R calculation stays finite for the extreme RHS magnitudes.
+            difference <- as.numeric(large %*% (result$x / rhs_scale)) - normalized_rhs
+            independent <- sqrt(sum(difference^2) / sum(normalized_rhs^2))
+            solution_error <- sqrt(sum((result$x / scale - reference)^2) /
+                                    sum(reference^2))
+            stopifnot(result$converged, all(is.finite(result$x)),
+                      is.finite(result$error), is.finite(result$residual),
+                      result$residual <= 1e-10, solution_error < 1e-8,
+                      abs(result$residual - independent) <=
+                          128 * .Machine$double.eps + 1e-5 * independent,
+                      result$threads == min(threads, state$max_threads),
+                      identical(amgcl_info()$current_threads, state$current_threads))
+        }
+    }
+    for (threads in c(1L, 2L)) {
+        zero <- amgcl_solve(solver, numeric(large_n), threads = threads)
+        stopifnot(zero$converged, zero$residual == 0, zero$error == 0,
+                  zero$iterations == 0L, all(zero$x == 0),
+                  zero$threads == min(threads, state$max_threads),
+                  identical(amgcl_info()$current_threads, state$current_threads))
+    }
+})
+
 # Symmetric compressed matrices store only one triangle. Expanding either
 # triangle must preserve the matrix, including the natural Matrix-valued RHS.
 for (triangle in c("U", "L")) {

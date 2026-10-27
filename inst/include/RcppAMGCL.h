@@ -305,16 +305,43 @@ private:
         // AMG owns the original system matrix at the finest level, including
         // when the hierarchy consists only of its direct coarse solver.
         const Backend::matrix& A = implementation_->system_matrix();
-        long double residual_norm = 0;
-        long double rhs_norm = 0;
-        for (std::size_t row = 0; row < n_; ++row) {
-            long double ax = 0;
-            for (std::ptrdiff_t k = A.ptr[row]; k < A.ptr[row + 1]; ++k)
-                ax += static_cast<long double>(A.val[k]) * x[A.col[k]];
-            residual_norm = std::hypot(residual_norm, static_cast<long double>(rhs[row]) - ax);
-            rhs_norm = std::hypot(rhs_norm, static_cast<long double>(rhs[row]));
+        using Norms = std::pair<long double, long double>;
+        const auto accumulate = [&](std::size_t begin, std::size_t end) {
+            Norms norms(0, 0);
+            for (std::size_t row = begin; row < end; ++row) {
+                long double ax = 0;
+                for (std::ptrdiff_t k = A.ptr[row]; k < A.ptr[row + 1]; ++k)
+                    ax += static_cast<long double>(A.val[k]) * x[A.col[k]];
+                norms.first = std::hypot(norms.first, static_cast<long double>(rhs[row]) - ax);
+                norms.second = std::hypot(norms.second, static_cast<long double>(rhs[row]));
+            }
+            return norms;
+        };
+        Norms norms(0, 0);
+        if (n_ < 32768) {
+            norms = accumulate(0, n_);
+        } else {
+            // Fixed blocks give the same reduction order for any thread count.
+            // Hypot within and between blocks avoids overflow/underflow from
+            // squaring the residual or RHS, including on platforms where
+            // long double has the same range as double. Workers use no R API.
+            const std::size_t block_size = 4096;
+            const std::ptrdiff_t blocks = static_cast<std::ptrdiff_t>(
+                n_ / block_size + (n_ % block_size != 0));
+            std::vector<Norms> partials(static_cast<std::size_t>(blocks));
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static) if(omp_get_max_threads() > 1)
+#endif
+            for (std::ptrdiff_t block = 0; block < blocks; ++block) {
+                const std::size_t begin = static_cast<std::size_t>(block) * block_size;
+                partials[block] = accumulate(begin, std::min(n_, begin + block_size));
+            }
+            for (const Norms& partial : partials) {
+                norms.first = std::hypot(norms.first, partial.first);
+                norms.second = std::hypot(norms.second, partial.second);
+            }
         }
-        const double value = static_cast<double>(rhs_norm == 0 ? residual_norm : residual_norm / rhs_norm);
+        const double value = static_cast<double>(norms.second == 0 ? norms.first : norms.first / norms.second);
         if (!std::isfinite(value))
             throw std::runtime_error("The computed residual is non-finite; check the matrix");
         return value;

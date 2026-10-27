@@ -8,6 +8,8 @@
   avoiding a second retained CSR copy while preserving 64-bit C++ indices.
 * Add optional OpenMP setup and solve acceleration, with one thread by
   default and scoped thread settings.
+* Parallelize independent residuals on large systems using fixed blocks and
+  overflow-resistant norms, with the same serial fallback and thread cap.
 * Add build capability reporting and an R-independent C++ interface.
 * Explain direct coarse LU preconditioning for systems with at most 64 rows;
   convergence does not establish positive definiteness.
