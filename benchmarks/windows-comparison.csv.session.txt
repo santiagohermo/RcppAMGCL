@@ -35,16 +35,16 @@ time zone: Australia/Sydney
 tzcode source: internal
 
 attached base packages:
-[1] stats     graphics  grDevices utils     datasets  methods   base     
+[1] stats     graphics  grDevices utils     datasets  methods   base
 
 loaded via a namespace (and not attached):
 [1] compiler_4.5.3  Matrix_1.7-4    tools_4.5.3     RcppAMGCL_0.1.0
-[5] Rcpp_1.1.1      grid_4.5.3      lattice_0.22-9 
+[5] Rcpp_1.1.1      grid_4.5.3      lattice_0.22-9
 
 [1] "Windows R BLAS: C:/PROGRA~1/R/R-45~1.3/bin/x64/Rblas.dll (sessionInfo/extSoftVersion do not report its vendor)"
 
-      sysname       release       version       machine 
-    "Windows"      "10 x64" "build 26300"      "x86-64" 
+      sysname       release       version       machine
+    "Windows"      "10 x64" "build 26300"      "x86-64"
 
 $openmp
 [1] TRUE
@@ -62,20 +62,20 @@ $amgcl_version
 [1] "1.4.5"
 
 
-      OMP_THREAD_LIMIT        OMP_NUM_THREADS   OPENBLAS_NUM_THREADS 
-                   "8"                    "1"                    "1" 
-       MKL_NUM_THREADS       BLIS_NUM_THREADS VECLIB_MAXIMUM_THREADS 
-                   "1"                    "1"                    "1" 
+      OMP_THREAD_LIMIT        OMP_NUM_THREADS   OPENBLAS_NUM_THREADS
+                   "8"                    "1"                    "1"
+       MKL_NUM_THREADS       BLIS_NUM_THREADS VECLIB_MAXIMUM_THREADS
+                   "1"                    "1"                    "1"
 
 CXX = g++ -std=gnu++17
 CXXFLAGS = -O2 -Wall -gdwarf-2 -mfpmath=sse -msse2 -mstackrealign
 
 Artifact MD5 hashes:
-                              C:/Users/sher0042/Documents/GitHub/RccpAMCGL/tools/compare-solvers.R 
-                                                                "61704494c56370a4d63adb5b2cc662b8" 
-C:/Users/sher0042/Documents/GitHub/RccpAMCGL/.local/lib-review-final/RcppAMGCL/include/RcppAMGCL.h 
-                                                                "d8c5d5f29e5d2038fc96e241e60b33a0" 
-                           C:/Users/sher0042/Documents/GitHub/RccpAMCGL/tools/benchmark-memory.cpp 
-                                                                "d778f13173e68c9da3864fbf62f7cb8a" 
-         C:/Users/sher0042/Documents/GitHub/RccpAMCGL/.local/benchmark-memory/benchmark-memory.dll 
-                                                                "fbd7ade034fb87fd8cf7f15a5001171e" 
+                              C:/Users/sher0042/Documents/GitHub/RccpAMCGL/tools/compare-solvers.R
+                                                                "61704494c56370a4d63adb5b2cc662b8"
+C:/Users/sher0042/Documents/GitHub/RccpAMCGL/.local/lib-review-final/RcppAMGCL/include/RcppAMGCL.h
+                                                                "d8c5d5f29e5d2038fc96e241e60b33a0"
+                           C:/Users/sher0042/Documents/GitHub/RccpAMCGL/tools/benchmark-memory.cpp
+                                                                "d778f13173e68c9da3864fbf62f7cb8a"
+         C:/Users/sher0042/Documents/GitHub/RccpAMCGL/.local/benchmark-memory/benchmark-memory.dll
+                                                                "fbd7ade034fb87fd8cf7f15a5001171e"

@@ -1,21 +1,21 @@
 # Validation
 
 Latest recorded checks: 27 October 2026, source
-[`771186f`](https://github.com/santiagohermo/RcppAMGCL/commit/771186f44af6b215d5844e8b6e729a3e94a6dcc4).
+[`9de2012`](https://github.com/santiagohermo/RcppAMGCL/commit/9de20125f1d34e4988499888868b484459337288).
 
 ## Local check
 
 `R CMD check --as-cran` on Windows 11, R 4.5.3 and Rtools GCC 14.3.0:
 **0 errors, 0 warnings, 1 NOTE: New submission**. Tests, examples and both
-PDF and HTML manuals passed. The serial build also compiled and passed
-the R tests. See the [check log](windows-review-as-cran.log).
+PDF and HTML manuals passed, using an OpenMP build with a two-thread cap.
+See the [check log](windows-standalone-as-cran.log).
 
 Tested source archive SHA256:
-`ba0b0a9a92efc0c31bcc5998041f1c5640c65c6f4d9fb1ebc108c6d3b75afc4b`.
+`c3fe5634ef570e63e38bf216de8dab3af87eed7cab4d3ad54b63dc4846d1e829`.
 
 ## GitHub Actions
 
-All six configurations in [this run](https://github.com/santiagohermo/RcppAMGCL/actions/runs/40431758912)
+All six configurations in [this run](https://github.com/santiagohermo/RcppAMGCL/actions/runs/40488244633)
 passed with `Status: OK` using R 4.6.1.
 
 | Platform | Compiler | OpenMP on | OpenMP off |
@@ -27,10 +27,11 @@ passed with `Status: OK` using R 4.6.1.
 Each job installs the package, verifies the selected backend, runs R and
 standalone C++14 tests, and runs `R CMD check --as-cran --no-manual` with
 remote incoming checks disabled. The local check includes the manual and
-incoming checks. Linux installation was retried after slow system-package
-downloads; the successful results are in attempt 2.
+incoming checks. Linux jobs needed retries for slow/stalled R installation;
+the final combined result is in attempt 3, retaining completed jobs.
 
 Tests cover both solvers, symmetric and nonsymmetric matrices, reusable
 objects, input validation, ownership, extreme RHS scales, independent
 residuals, and thread limits/restoration. Tests and examples use at most
-two threads. [Performance benchmarks](../benchmarks/README.md) run separately.
+two threads. The separate [performance comparison](../benchmarks/README.md)
+completed 900 measured solves with no accuracy failures on Windows.
