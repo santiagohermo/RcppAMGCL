@@ -197,6 +197,7 @@ class Solver {
         virtual ~Implementation() {}
         virtual std::tuple<std::size_t, double> solve(
             const std::vector<double>& rhs, std::vector<double>& x) = 0;
+        virtual const Backend::matrix& system_matrix() const = 0;
     };
 
     template <class IterativeSolver>
@@ -223,13 +224,17 @@ class Solver {
                 const std::vector<double>& rhs, std::vector<double>& x) override {
             return amg(rhs, x);
         }
+
+        const Backend::matrix& system_matrix() const override {
+            return amg.system_matrix();
+        }
     };
 
 public:
     explicit Solver(Matrix A, const std::string& method = "cg",
                     double tol = 1e-8, int maxiter = 1000, int threads = 1)
-        : matrix_(std::move(A)), tolerance_(tol) {
-        matrix_.validate();
+        : n_(A.n), tolerance_(tol) {
+        A.validate();
         if (method != "cg" && method != "bicgstab")
             throw std::invalid_argument("solver must be 'cg' or 'bicgstab'");
         if (!std::isfinite(tol) || tol <= 0)
@@ -240,10 +245,10 @@ public:
         try {
             if (method == "cg")
                 implementation_.reset(new ImplementationFor<amgcl::solver::cg<Backend>>(
-                    matrix_, tol, maxiter));
+                    A, tol, maxiter));
             else
                 implementation_.reset(new ImplementationFor<amgcl::solver::bicgstab<Backend>>(
-                    matrix_, tol, maxiter));
+                    A, tol, maxiter));
         } catch (const std::runtime_error& error) {
             throw std::runtime_error(std::string("AMGCL setup failed; check that the matrix ") +
                 "is nonsingular and suitable for the unpivoted coarse solver. AMGCL: " +
@@ -254,11 +259,11 @@ public:
     Solver(const Solver&) = delete;
     Solver& operator=(const Solver&) = delete;
 
-    std::size_t size() const { return matrix_.n; }
+    std::size_t size() const { return n_; }
 
     // A solver reuses mutable AMG workspaces: do not call it concurrently.
     SolveResult solve(const std::vector<double>& rhs, int threads = 1) {
-        if (rhs.size() != matrix_.n)
+        if (rhs.size() != n_)
             throw std::invalid_argument("Length of b must equal nrow(A)");
         double scale = 0;
         for (double value : rhs) {
@@ -267,7 +272,7 @@ public:
             scale = std::max(scale, std::abs(value));
         }
         SolveResult result;
-        result.x.assign(matrix_.n, 0.0);
+        result.x.assign(n_, 0.0);
         ThreadGuard guard(threads);
         result.threads = guard.threads();
         if (scale != 0) {
@@ -292,17 +297,20 @@ public:
     }
 
 private:
-    Matrix matrix_;
+    std::size_t n_;
     double tolerance_;
     std::unique_ptr<Implementation> implementation_;
 
     double residual(const std::vector<double>& rhs, const std::vector<double>& x) const {
+        // AMG owns the original system matrix at the finest level, including
+        // when the hierarchy consists only of its direct coarse solver.
+        const Backend::matrix& A = implementation_->system_matrix();
         long double residual_norm = 0;
         long double rhs_norm = 0;
-        for (std::size_t row = 0; row < matrix_.n; ++row) {
+        for (std::size_t row = 0; row < n_; ++row) {
             long double ax = 0;
-            for (std::ptrdiff_t k = matrix_.ptr[row]; k < matrix_.ptr[row + 1]; ++k)
-                ax += static_cast<long double>(matrix_.val[k]) * x[matrix_.col[k]];
+            for (std::ptrdiff_t k = A.ptr[row]; k < A.ptr[row + 1]; ++k)
+                ax += static_cast<long double>(A.val[k]) * x[A.col[k]];
             residual_norm = std::hypot(residual_norm, static_cast<long double>(rhs[row]) - ax);
             rhs_norm = std::hypot(rhs_norm, static_cast<long double>(rhs[row]));
         }

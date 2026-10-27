@@ -23,6 +23,8 @@ Systems with at most 64 rows use direct coarse LU preconditioning and often
 converge in one iteration; convergence never establishes symmetry or positive
 definiteness. Hierarchy setup errors add context while preserving AMGCL's
 diagnostic, without classifying every failure as singularity.
+Retain owned original matrix storage at AMG's finest level for independent
+residuals, without a redundant solver-level CSR copy. Preserve 64-bit index capacity.
 
 R interface agent owns DESCRIPTION, NAMESPACE, R/ (except generated RcppExports.R), man/, README.md, LICENSE, NEWS.md. Author from git: Santiago Hermo <santiago.hermo@monash.edu>. MIT + file LICENSE; acknowledge vendored author in Authors@R. Documentation must state CG requires SPD; no singular-system handling yet (AKM must normalize/drop nullspace).
 
