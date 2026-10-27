@@ -17,4 +17,7 @@ See \code{\link{amgcl_info}} for build capabilities.
 The installed \file{RcppAMGCL.h} header provides an R-independent C++
 interface for downstream code; the bundled AMGCL headers retain their
 upstream license notices.
+This product includes Kratos Multi-Physics technology. The installed
+\file{COPYRIGHTS} file inventories bundled-code ownership and licenses;
+additional notices are installed under \file{licenses}.
 }

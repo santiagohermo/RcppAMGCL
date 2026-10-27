@@ -121,6 +121,10 @@ license](inst/licenses/AMGCL-LICENSE.md); Boost is not required. The R
 wrapper is also MIT licensed. See [validation](validation/README.md) for
 executed checks and platform results.
 
+This product includes Kratos Multi-Physics technology. See the
+[bundled-code copyright inventory](inst/COPYRIGHTS) and
+[third-party notices](inst/licenses/AMGCL-THIRD-PARTY-NOTICES.txt).
+
 ## Disclaimer
 
 The original AMGCL solver code was developed by Denis Demidov and

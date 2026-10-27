@@ -1,0 +1,111 @@
+RcppAMGCL copyright and bundled-code inventory
+============================================
+
+The RcppAMGCL wrapper and its R-independent C++ interface are copyright
+2026 Santiago Hermo, under the MIT license identified in DESCRIPTION and
+LICENSE. This does not replace the copyrights or licenses of bundled code.
+
+AMGCL 1.4.5 is bundled in inst/include/amgcl (include/amgcl after
+installation). Its origin, pinned revision and local patches are recorded
+in inst/AMGCL-VERSION (AMGCL-VERSION after installation). All original
+header notices are retained. The AMGCL MIT license is also installed as
+licenses/AMGCL-LICENSE.md. Additional notices copied verbatim from the
+headers are installed as licenses/AMGCL-THIRD-PARTY-NOTICES.txt.
+
+Paths below are relative to include/amgcl. This inventory covers all
+distributed headers, including components not used by the R interface.
+The notices in the individual files remain authoritative; the package's
+MIT designation does not remove their additional conditions.
+
+AMGCL and contributions under the MIT license
+--------------------------------------------
+
+Copyright (c) 2012-2022 Denis Demidov: the AMGCL library, except where
+individual headers identify other or additional copyright holders.
+
+Copyright (c) 2014, Riccardo Rossi, CIMNE (International Center for
+Numerical Methods in Engineering):
+  adapter/epetra.hpp
+  adapter/ublas.hpp
+  mpi/util.hpp
+
+Copyright (c) 2014-2015, Riccardo Rossi, CIMNE (International Center for
+Numerical Methods in Engineering):
+  mpi/subdomain_deflation.hpp
+
+Copyright (c) 2016, Riccardo Rossi, CIMNE (International Center for
+Numerical Methods in Engineering):
+  backend/detail/mixing.hpp
+  preconditioner/schur_pressure_correction.hpp
+
+Copyright (c) 2016 Mohammad Siahatgar:
+  perf_counter/cray_energy.hpp
+  perf_counter/mpi_aggregator.hpp
+
+Copyright (c) 2015 Christoph Sohrmann:
+  value_type/complex.hpp
+
+Copyright (c) 2019 Peter Gamnitzer, UIBK (University of Innsbruck):
+  relaxation/chebyshev.hpp
+
+Kratos Multi-Physics-derived code
+--------------------------------
+
+This product includes Kratos Multi-Physics technology.
+
+Copyright (c) 2012, Pooyan Dadvand, Riccardo Rossi, CIMNE (International
+Center for Numerical Methods in Engineering). All rights reserved.
+  reorder/cuthill_mckee.hpp
+  solver/skyline_lu.hpp
+
+These headers retain the original Kratos redistribution terms, including
+the advertising acknowledgement above and the non-endorsement condition.
+The full notice is reproduced in licenses/AMGCL-THIRD-PARTY-NOTICES.txt.
+
+LAPACK-derived QR decomposition
+------------------------------
+
+Copyright (c) 1992-2013 The University of Tennessee and The University
+of Tennessee Research Foundation. All rights reserved.
+Copyright (c) 2000-2013 The University of California Berkeley.
+All rights reserved.
+Copyright (c) 2006-2013 The University of Colorado Denver.
+All rights reserved.
+  detail/qr.hpp
+
+This is a port of LAPACK's ZGEQR2 and related procedures. The original
+BSD-style source/binary redistribution terms and non-endorsement condition
+are retained in the header and reproduced in the third-party notices.
+
+SciPy-derived LGMRES
+-------------------
+
+Copyright (c) 2001, 2002 Enthought, Inc. All rights reserved.
+Copyright (c) 2003-2016 SciPy Developers. All rights reserved.
+  solver/lgmres.hpp
+
+The original three-clause BSD-style notice is retained in the header and
+reproduced in the third-party notices.
+
+PETSc-derived BiCGStab(L)
+------------------------
+
+Copyright (c) 1991-2014, UChicago Argonne, LLC and the PETSc Development
+Team. All rights reserved.
+  solver/bicgstabl.hpp
+
+The original two-clause BSD-style notice is retained in the header and
+reproduced in the third-party notices.
+
+IDR(s) provenance
+-----------------
+
+solver/idrs.hpp retains Denis Demidov's MIT notice and credits a port of
+the MATLAB IDR(s) implementation published on Martin B. van Gijzen's
+TU Delft site. Its accompanying reference is Martin B. van Gijzen and
+Peter Sonneveld, "Algorithm 913: An Elegant IDR(s) Variant that Efficiently
+Exploits Bi-orthogonality Properties", ACM Transactions on Mathematical
+Software 38(1), 5:1-5:19 (2011). The header's "copyright ACM" statement
+belongs to that publication citation; it is not presented here as a
+replacement license for the bundled header. The original provenance and
+citation text remain in the header.
