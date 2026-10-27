@@ -53,7 +53,9 @@ for (dimension in c(2L, 3L)) {
                               nnz = length(A@x), solver = "cg",
                               requested_threads = threads, effective_threads = result$threads,
                               repetition = repetition, setup_seconds = setup_seconds,
-                              solve_seconds = solve_seconds, iterations = result$iterations,
+                              solve_seconds = solve_seconds,
+                              total_seconds = setup_seconds + solve_seconds,
+                              iterations = result$iterations,
                               residual = result$residual, converged = result$converged,
                               openmp = info$openmp, max_threads = info$max_threads)
             rows[[length(rows) + 1L]] <- row

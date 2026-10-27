@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
             if (!warm.converged) throw std::runtime_error("Warmup did not converge");
         }
         std::cout << "n,nnz,requested_threads,effective_threads,repetition,input_csr_bytes,"
-                     "solver_live_cpp_bytes,setup_seconds,solve_seconds,residual_seconds,"
+                     "solver_live_cpp_bytes,setup_seconds,solve_seconds,total_seconds,residual_seconds,"
                      "residual_fraction,iterations,residual,verified_residual,openmp,max_threads\n";
         std::cout << std::setprecision(12);
         for (int repetition = 1; repetition <= repetitions; ++repetition) {
@@ -165,7 +165,8 @@ int main(int argc, char **argv) {
                 throw std::runtime_error("Measured solve failed independent residual verification");
             std::cout << n << ',' << nnz << ',' << threads << ',' << result.threads << ','
                       << repetition << ',' << input_csr_bytes << ',' << solver_live_bytes << ','
-                      << setup_seconds << ',' << solve_seconds << ',' << residual_seconds << ','
+                      << setup_seconds << ',' << solve_seconds << ','
+                      << setup_seconds + solve_seconds << ',' << residual_seconds << ','
                       << residual_seconds / solve_seconds << ',' << result.iterations << ','
                       << result.residual << ',' << independently_verified << ','
                       << info.openmp << ',' << info.max_threads << '\n';
