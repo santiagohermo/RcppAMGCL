@@ -68,11 +68,15 @@ void spgemm_saad(const AMatrix &A, const BMatrix &B, CMatrix &C, bool sort = tru
     C.set_size(A.nrows, B.ncols);
     C.ptr[0] = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptrdiff_t> marker(B.ncols, -1);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx ia = 0; ia < static_cast<Idx>(A.nrows); ++ia) {
             Col C_cols = 0;
             for(Idx ja = A.ptr[ia], ea = A.ptr[ia+1]; ja < ea; ++ja) {
@@ -92,11 +96,15 @@ void spgemm_saad(const AMatrix &A, const BMatrix &B, CMatrix &C, bool sort = tru
 
     C.set_nonzeros(C.scan_row_sizes());
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptrdiff_t> marker(B.ncols, -1);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx ia = 0; ia < static_cast<Idx>(A.nrows); ++ia) {
             Idx row_beg = C.ptr[ia];
             Idx row_end = row_beg;
@@ -415,11 +423,15 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
 
     Idx max_row_width = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         Idx my_max = 0;
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(int i = 0; i < static_cast<Idx>(A.nrows); ++i) {
             Idx row_beg = A.ptr[i];
             Idx row_end = A.ptr[i+1];
@@ -431,7 +443,9 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
             my_max = std::max(my_max, row_width);
         }
 
+#ifdef _OPENMP
 #pragma omp critical
+#endif
         max_row_width = std::max(max_row_width, my_max);
     }
 
@@ -453,7 +467,9 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
     C.ptr[0] = 0;
 
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
 #ifdef _OPENMP
         const int tid = omp_get_thread_num();
@@ -463,7 +479,9 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
 
         Col *t_col = &tmp_col[tid][0];
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx i = 0; i < static_cast<Idx>(A.nrows); ++i) {
             Idx row_beg = A.ptr[i];
             Idx row_end = A.ptr[i+1];
@@ -477,7 +495,9 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
 
     C.set_nonzeros(C.scan_row_sizes());
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
 #ifdef _OPENMP
         const int tid = omp_get_thread_num();
@@ -488,7 +508,9 @@ void spgemm_rmerge(const AMatrix &A, const BMatrix &B, CMatrix &C) {
         Col *t_col = tmp_col[tid].data();
         Val *t_val = tmp_val[tid].data();
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx i = 0; i < static_cast<Idx>(A.nrows); ++i) {
             Idx row_beg = A.ptr[i];
             Idx row_end = A.ptr[i+1];

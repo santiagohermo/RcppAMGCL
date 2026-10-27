@@ -63,7 +63,9 @@ struct spai0 {
 
         auto m = std::make_shared< backend::numa_vector<value_type> >(n, false);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
             value_type  num = math::zero<value_type>();
             scalar_type den = math::zero<scalar_type>();

@@ -115,12 +115,16 @@ class pointwise_aggregates {
 
                 count = pw_aggr.count * prm.block_size;
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
                 {
                     std::vector<ptrdiff_t> j(prm.block_size);
                     std::vector<ptrdiff_t> e(prm.block_size);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
                     for(ptrdiff_t ip = 0; ip < static_cast<ptrdiff_t>(Ap.nrows); ++ip) {
                         ptrdiff_t ia = ip * prm.block_size;
 

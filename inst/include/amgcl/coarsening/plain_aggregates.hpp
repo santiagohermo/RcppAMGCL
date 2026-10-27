@@ -125,7 +125,9 @@ struct plain_aggregates {
 
         /* 1. Get strong connections */
         auto dia = diagonal(A);
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
             value_type eps_dia_i = eps_squared * (*dia)[i];
 

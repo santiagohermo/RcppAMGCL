@@ -106,7 +106,9 @@ struct crs {
         val = new val_type[nnz];
 
         ptr[0] = ptr_range[0];
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
             ptr[i+1] = ptr_range[i+1];
             for(auto j = ptr_range[i]; j < ptr_range[i+1]; ++j) {
@@ -126,7 +128,9 @@ struct crs {
         ptr = new ptr_type[nrows + 1];
         ptr[0] = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
             int row_width = 0;
             for(auto a = backend::row_begin(A, i); a; ++a) ++row_width;
@@ -137,7 +141,9 @@ struct crs {
         col = new col_type[nnz];
         val = new val_type[nnz];
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
             ptr_type row_head = ptr[i];
             for(auto a = backend::row_begin(A, i); a; ++a) {
@@ -160,7 +166,9 @@ struct crs {
             val = new val_type[nnz];
 
             ptr[0] = other.ptr[0];
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
                 ptr[i+1] = other.ptr[i+1];
                 for(ptr_type j = other.ptr[i]; j < other.ptr[i+1]; ++j) {
@@ -197,7 +205,9 @@ struct crs {
             val = new val_type[nnz];
 
             ptr[0] = other.ptr[0];
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
                 ptr[i+1] = other.ptr[i+1];
                 for(ptr_type j = other.ptr[i]; j < other.ptr[i+1]; ++j) {
@@ -240,7 +250,9 @@ struct crs {
 
         if (clean_ptr) {
             ptr[0] = 0;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i)
                 ptr[i+1] = 0;
         }
@@ -254,7 +266,9 @@ struct crs {
     void set_nonzeros() {
         set_nonzeros(ptr[nrows]);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
             ptrdiff_t row_beg = ptr[i];
             ptrdiff_t row_end = ptr[i+1];
@@ -335,7 +349,9 @@ template < typename V, typename C, typename P >
 void sort_rows(crs<V, C, P> &A) {
     const size_t n = rows(A);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
         P beg = A.ptr[i];
         P end = A.ptr[i + 1];
@@ -408,11 +424,15 @@ sum(Val alpha, const crs<Val,Col,Ptr> &A, Val beta, const crs<Val,Col,Ptr> &B, b
 
     C->ptr[0] = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptrdiff_t> marker(C->ncols, -1);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx i = 0; i < static_cast<Idx>(C->nrows); ++i) {
             Idx C_cols = 0;
 
@@ -440,11 +460,15 @@ sum(Val alpha, const crs<Val,Col,Ptr> &A, Val beta, const crs<Val,Col,Ptr> &B, b
 
     C->set_nonzeros(C->scan_row_sizes());
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptrdiff_t> marker(C->ncols, -1);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(Idx i = 0; i < static_cast<Idx>(C->nrows); ++i) {
             Idx row_beg = C->ptr[i];
             Idx row_end = row_beg;
@@ -490,7 +514,9 @@ template<class Val, class Col, class Ptr, class T>
 void scale(crs<Val, Col, Ptr> &A, T s) {
     ptrdiff_t n = backend::rows(A);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for(ptrdiff_t i = 0; i < n; ++i) {
         for(ptrdiff_t j = A.ptr[i], e = A.ptr[i+1]; j < e; ++j)
             A.val[j] *= s;
@@ -520,13 +546,17 @@ pointwise_matrix(const crs<value_type, col_type, ptr_type> &A, unsigned block_si
 
     Ap.set_size(np, mp, true);
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptr_type> j(block_size);
         std::vector<ptr_type> e(block_size);
 
         // Count number of nonzeros in block matrix.
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(ptrdiff_t ip = 0; ip < np; ++ip) {
             ptrdiff_t ia = ip * block_size;
             col_type cur_col = 0;
@@ -581,12 +611,16 @@ pointwise_matrix(const crs<value_type, col_type, ptr_type> &A, unsigned block_si
 
     Ap.set_nonzeros(Ap.scan_row_sizes());
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
     {
         std::vector<ptr_type> j(block_size);
         std::vector<ptr_type> e(block_size);
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
         for(ptrdiff_t ip = 0; ip < np; ++ip) {
             ptrdiff_t ia = ip * block_size;
             col_type cur_col = 0;
@@ -670,7 +704,9 @@ class numa_vector {
 
         numa_vector(size_t n, bool init = true) : n(n), p(new T[n]) {
             if (init) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
                 for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
                     p[i] = math::zero<T>();
             }
@@ -683,7 +719,9 @@ class numa_vector {
             p = new T[n];
 
             if (init) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
                 for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
                     p[i] = math::zero<T>();
             }
@@ -694,7 +732,9 @@ class numa_vector {
                 typename std::enable_if<!std::is_integral<Vector>::value, int>::type = 0
                 ) : n(other.size()), p(new T[n])
         {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
                 p[i] = other[i];
         }
@@ -709,7 +749,9 @@ class numa_vector {
                     >::value,
                     "Iterator has to be random access");
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
                 p[i] = beg[i];
         }
@@ -755,7 +797,9 @@ std::shared_ptr< numa_vector<V> > diagonal(const crs<V, C, P> &A, bool invert = 
     const size_t n = rows(A);
     auto dia = std::make_shared< numa_vector<V> >(n, false);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
     for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
         for(auto a = A.row_begin(i); a; ++a) {
             if (a.col() == i) {
@@ -791,12 +835,16 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
         // Use Gershgorin disk theorem.
         radius = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             scalar_type emax = 0;
             value_type  dia = math::identity<value_type>();
 
+#ifdef _OPENMP
 #pragma omp for nowait
+#endif
             for(ptrdiff_t i = 0; i < n; ++i) {
                 scalar_type s = 0;
 
@@ -814,7 +862,9 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
                 emax = std::max(emax, s);
             }
 
+#ifdef _OPENMP
 #pragma omp critical
+#endif
             radius = std::max(radius, emax);
         }
     } else {
@@ -824,7 +874,9 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
         // Fill the initial vector with random values.
         // Also extract the inverted matrix diagonal values.
         scalar_type b0_norm = 0;
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
 #ifdef _OPENMP
             int tid = omp_get_thread_num();
@@ -836,7 +888,9 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
 
             scalar_type loc_norm = 0;
 
+#ifdef _OPENMP
 #pragma omp for nowait
+#endif
             for(ptrdiff_t i = 0; i < n; ++i) {
                 rhs_type v = math::constant<rhs_type>(rnd(rng));
 
@@ -844,13 +898,17 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
                 loc_norm += math::norm(math::inner_product(v,v));
             }
 
+#ifdef _OPENMP
 #pragma omp critical
+#endif
             b0_norm += loc_norm;
         }
 
         // Normalize b0
         b0_norm = 1 / sqrt(b0_norm);
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < n; ++i) {
             b0[i] = b0_norm * b0[i];
         }
@@ -861,13 +919,17 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
             // radius = <b1,b0>
             scalar_type b1_norm = 0;
             radius = 0;
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
             {
                 scalar_type loc_norm = 0;
                 scalar_type loc_radi = 0;
                 value_type  dia = math::identity<value_type>();
 
+#ifdef _OPENMP
 #pragma omp for nowait
+#endif
                 for(ptrdiff_t i = 0; i < n; ++i) {
                     rhs_type s = math::zero<rhs_type>();
 
@@ -886,7 +948,9 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
                     b1[i] = s;
                 }
 
+#ifdef _OPENMP
 #pragma omp critical
+#endif
                 {
                     b1_norm += loc_norm;
                     radius  += loc_radi;
@@ -896,7 +960,9 @@ spectral_radius(const Matrix &A, int power_iters = 0) {
             if (++iter < power_iters) {
                 // b0 = b1 / b1_norm
                 b1_norm = 1 / sqrt(b1_norm);
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
                 for(ptrdiff_t i = 0; i < n; ++i) {
                     b0[i] = b1_norm * b1[i];
                 }
@@ -1089,7 +1155,9 @@ struct clear_impl<
         typedef typename backend::value_type<Vec>::type V;
 
         const size_t n = x.size();
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
             x[i] = math::zero<V>();
         }
@@ -1159,14 +1227,18 @@ struct inner_product_impl<
             sum = _sum_dyna.data();
         }
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             const int tid = omp_get_thread_num();
 
             return_type s = math::zero<return_type>();
             return_type c = math::zero<return_type>();
 
+#ifdef _OPENMP
 #pragma omp for nowait
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 return_type d = math::inner_product(x[i], y[i]) - c;
                 return_type t = s + d;
@@ -1195,12 +1267,16 @@ struct axpby_impl<
     {
         const size_t n = x.size();
         if (!math::is_zero(b)) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 y[i] = a * x[i] + b * y[i];
             }
         } else {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 y[i] = a * x[i];
             }
@@ -1222,12 +1298,16 @@ struct axpbypcz_impl<
     {
         const size_t n = x.size();
         if (!math::is_zero(c)) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 z[i] = a * x[i] + b * y[i] + c * z[i];
             }
         } else {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 z[i] = a * x[i] + b * y[i];
             }
@@ -1251,12 +1331,16 @@ struct vmul_impl<
     {
         const size_t n = x.size();
         if (!math::is_zero(b)) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 z[i] = a * x[i] * y[i] + b * z[i];
             }
         } else {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 z[i] = a * x[i] * y[i];
             }
@@ -1288,12 +1372,16 @@ struct vmul_impl<
         const size_t n = x.size();
 
         if (!math::is_zero(b)) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 Z[i] = a * x[i] * Y[i] + b * Z[i];
             }
         } else {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 Z[i] = a * x[i] * Y[i];
             }
@@ -1313,7 +1401,9 @@ struct copy_impl<
     static void apply(const Vec1 &x, Vec2 &y)
     {
         const size_t n = x.size();
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
             y[i] = x[i];
         }

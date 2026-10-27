@@ -63,7 +63,9 @@ struct spmv_impl<
         const ptrdiff_t n = static_cast<ptrdiff_t>( rows(A) );
 
         if (!math::is_zero(beta)) {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < n; ++i) {
                 V sum = math::zero<V>();
                 for(typename row_iterator<Matrix>::type a = row_begin(A, i); a; ++a)
@@ -71,7 +73,9 @@ struct spmv_impl<
                 y[i] = alpha * sum + beta * y[i];
             }
         } else {
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
             for(ptrdiff_t i = 0; i < n; ++i) {
                 V sum = math::zero<V>();
                 for(typename row_iterator<Matrix>::type a = row_begin(A, i); a; ++a)
@@ -104,7 +108,9 @@ struct residual_impl<
 
         const ptrdiff_t n = static_cast<ptrdiff_t>( rows(A) );
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < n; ++i) {
             V sum = math::zero<V>();
             for(typename row_iterator<Matrix>::type a = row_begin(A, i); a; ++a)

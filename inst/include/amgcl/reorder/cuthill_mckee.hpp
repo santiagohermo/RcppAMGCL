@@ -101,17 +101,23 @@ struct cuthill_mckee {
         std::vector<ptrdiff_t> levelSet(n, 0);
         std::vector<ptrdiff_t> nextSameDegree(n, -1);
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             ptrdiff_t maxd = 0;
+#ifdef _OPENMP
 #pragma omp for
+#endif
             for(ptrdiff_t i = 0; i < n; ++i) {
                 ptrdiff_t row_width = 0;
                 for(auto a = backend::row_begin(A, i); a; ++a, ++row_width);
                 degree[i] = row_width;
                 maxd = std::max(maxd, degree[i]);
             }
+#ifdef _OPENMP
 #pragma omp critical
+#endif
             {
                 maxDegree = std::max(maxDegree, maxd);
             }

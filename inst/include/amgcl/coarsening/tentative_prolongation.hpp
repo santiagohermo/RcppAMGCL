@@ -153,7 +153,9 @@ std::shared_ptr<Matrix> tentative_prolongation(
         P->set_size(n, nullspace.cols * nba);
         P->ptr[0] = 0;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
             P->ptr[i+1] = aggr[i] < 0 ? 0 : nullspace.cols;
 
@@ -165,12 +167,16 @@ std::shared_ptr<Matrix> tentative_prolongation(
         std::vector<double> Bnew;
         Bnew.resize(nba * nullspace.cols * nullspace.cols);
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             amgcl::detail::QR<double> qr;
             std::vector<double> Bpart;
 
+#ifdef _OPENMP
 #pragma omp for
+#endif
             for(ptrdiff_t i = 0; i < nba; ++i) {
                 auto aggr_beg = aggr_ptr[i];
                 auto aggr_end = aggr_ptr[i+1];
@@ -208,13 +214,17 @@ std::shared_ptr<Matrix> tentative_prolongation(
     } else {
         P->set_size(n, naggr);
         P->ptr[0] = 0;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i)
             P->ptr[i+1] = (aggr[i] >= 0);
 
         P->set_nonzeros(P->scan_row_sizes());
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
         for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
             if (aggr[i] >= 0) {
                 P->col[P->ptr[i]] = aggr[i];

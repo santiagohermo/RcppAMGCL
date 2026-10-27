@@ -155,12 +155,16 @@ struct smoothed_aggregation {
         }
 
         AMGCL_TIC("smoothing");
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             std::vector<ptrdiff_t> marker(P->ncols, -1);
 
             // Count number of entries in P.
+#ifdef _OPENMP
 #pragma omp for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
                 for(ptrdiff_t ja = A.ptr[i], ea = A.ptr[i+1]; ja < ea; ++ja) {
                     ptrdiff_t ca = A.col[ja];
@@ -184,12 +188,16 @@ struct smoothed_aggregation {
         P->scan_row_sizes();
         P->set_nonzeros();
 
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
         {
             std::vector<ptrdiff_t> marker(P->ncols, -1);
 
             // Fill the interpolation matrix.
+#ifdef _OPENMP
 #pragma omp for
+#endif
             for(ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(n); ++i) {
 
                 // Diagonal of the filtered matrix is the original matrix

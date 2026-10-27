@@ -12,3 +12,17 @@ Local patch: solver/cg.hpp and solver/bicgstab.hpp guard std::cout usage
 with #ifndef AMGCL_RCPP_NO_OUTPUT. RcppAMGCL.h defines this macro to suppress
 upstream console access; solver arithmetic is unchanged. This also avoids
 access to process-wide iostream state while running R package code.
+
+Local patch: wrap OpenMP pragma directives in #ifdef _OPENMP / #endif in
+the following active CPU-backend headers so serial builds compile without
+unknown-pragma warnings or compiler diagnostic suppression. The directives
+and numerical code are unchanged when OpenMP is enabled:
+  backend/builtin.hpp
+  backend/detail/matrix_ops.hpp
+  coarsening/plain_aggregates.hpp
+  coarsening/pointwise_aggregates.hpp
+  coarsening/smoothed_aggregation.hpp
+  coarsening/tentative_prolongation.hpp
+  detail/spgemm.hpp
+  relaxation/spai0.hpp
+  reorder/cuthill_mckee.hpp
