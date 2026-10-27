@@ -1,6 +1,8 @@
 # Implementation contract
 
-Package RcppAMGCL 0.1.0; C++14; Rcpp and Matrix only required dependencies.
+Package RcppAMGCL 0.1.0; R >= 4.3.0 with R's default C++ compiler standard;
+installed C++ header also compatible with C++14. Rcpp and Matrix are the only
+non-base R dependencies (methods is a base R package).
 Vendor AMGCL 1.4.5 pinned to its resolved tag commit, retain licence; define AMGCL_NO_BOOST.
 
 Public R API:
@@ -18,6 +20,6 @@ C++ integration owns src/solver.cpp and inst/include/RcppAMGCL.h (R-independent 
 
 R interface agent owns DESCRIPTION, NAMESPACE, R/ (except generated RcppExports.R), man/, README.md, LICENSE, NEWS.md. Author from git: Santiago Hermo <santiago.hermo@monash.edu>. MIT + file LICENSE; acknowledge vendored author in Authors@R. Documentation must state CG requires SPD; no singular-system handling yet (AKM must normalize/drop nullspace).
 
-Infrastructure agent owns configure, configure.win, cleanup, cleanup.win, src/Makevars.in, tests/, .github/, .Rbuildignore, .gitignore, tools/ benchmark/check helpers. Use R's SHLIB_OPENMP_CXXFLAGS, compile/link probe; RCCPAMGCL_OPENMP=auto|on|off (spell as RCPPAMGCL_OPENMP in actual files), optional fallback. Six CI combinations Linux/Windows/macOS x on/off; explicitly verify capability; CRAN tests/examples <=2 threads. Base R test script preferred to avoid dependency. Benchmark setup/solve separately 1,2,4,8 threads, default >=100k unknowns, outside tests.
+Infrastructure agent owns configure, configure.win, cleanup, cleanup.win, src/Makevars.in, tests/, .github/, .Rbuildignore, .gitignore, tools/ benchmark/check helpers. Use R's SHLIB_OPENMP_CXXFLAGS, compile/link probe; RCPPAMGCL_OPENMP=auto|on|off, optional fallback. Six CI combinations Linux/Windows/macOS x on/off; explicitly verify capability; CRAN tests/examples <=2 threads. Base R test script preferred to avoid dependency. Benchmark setup/solve separately 1,2,4,8 threads, default >=100k unknowns, outside tests.
 
 Root owns vendoring, local environment/build, generated exports, Git repository/remote, integration review and fixes. Coordinate before changing this interface.

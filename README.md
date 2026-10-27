@@ -111,6 +111,13 @@ workers.
 threads. The separate benchmark script under `tools/` measures setup and
 solve times for 1, 2, 4, and 8 threads on larger sparse matrices.
 
+```sh
+Rscript tools/benchmark.R benchmarks/results-local.csv 3 160000
+```
+
+Recorded measurements and reproduction details are in
+[`benchmarks/README.md`](benchmarks/README.md).
+
 ## C++ use
 
 The installed `RcppAMGCL.h` exposes the `rcppamgcl` namespace with owned CSR
@@ -154,6 +161,9 @@ than the presence of the workflow, establish whether each platform passes.
 The `URL` and `BugReports` fields are omitted from `DESCRIPTION` while the
 repository is private, because unauthenticated CRAN checks cannot access
 it. Add the public repository and issue tracker URLs when publishing.
+
+See [`validation/README.md`](validation/README.md) for executed checks,
+the tested source revision, and the remaining CRAN submission note.
 
 The R wrapper is MIT licensed. Bundled AMGCL retains its upstream license
 and copyright notices.

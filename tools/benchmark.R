@@ -66,7 +66,8 @@ for (dimension in c(2L, 3L)) {
 results <- do.call(rbind, rows)
 dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
 write.csv(results, output, row.names = FALSE)
-writeLines(c(capture.output(sessionInfo()), "", capture.output(Sys.info()), "",
+writeLines(c(capture.output(sessionInfo()), "",
+             capture.output(Sys.info()[c("sysname", "release", "version", "machine")]), "",
              capture.output(info), "",
              paste("OMP_THREAD_LIMIT:", Sys.getenv("OMP_THREAD_LIMIT", unset = "unset")),
              paste("OMP_NUM_THREADS:", Sys.getenv("OMP_NUM_THREADS", unset = "unset"))),

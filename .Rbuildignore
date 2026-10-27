@@ -15,4 +15,5 @@
 ^\.artifacts$
 ^tools$
 ^benchmarks$
+^validation$
 ^cran-comments\.md$
