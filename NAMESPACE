@@ -1,0 +1,7 @@
+useDynLib(RcppAMGCL, .registration = TRUE)
+importFrom(Rcpp, evalCpp)
+importClassesFrom(Matrix, dgCMatrix)
+export(amgcl_setup)
+export(amgcl_solve)
+export(amgcl_info)
+S3method(print, amgcl_solver)

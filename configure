@@ -1,0 +1,92 @@
+#!/bin/sh
+# Probe with R's own build machinery: this honours CXX14, Makevars, and the
+# platform's OpenMP flags, and tests linking without running target code.
+set -eu
+
+mode=${RCPPAMGCL_OPENMP:-auto}
+case "$mode" in
+    auto|on|off) ;;
+    *) echo "configure: RCPPAMGCL_OPENMP must be auto, on, or off" >&2; exit 1 ;;
+esac
+
+if test -z "${R_HOME:-}"; then
+    echo "configure: R_HOME is not set; install using R CMD INSTALL" >&2
+    exit 1
+fi
+R_BIN="${R_HOME}/bin/R"
+if test ! -x "$R_BIN"; then R_BIN="${R_HOME}/bin/R.exe"; fi
+
+openmp_flags=
+disable_openmp=-DRCPPAMGCL_DISABLE_OPENMP
+rm -f src/Makevars src/Makevars.win
+probe_dir=.rcppamgcl-conftest-$$
+mkdir "$probe_dir"
+cleanup_probe() {
+    rm -f "$probe_dir"/*
+    rmdir "$probe_dir"
+}
+trap cleanup_probe EXIT HUP INT TERM
+: > config.log
+probe() {
+    printf 'CXX_STD = CXX14\nPKG_CXXFLAGS = %s\nPKG_LIBS = %s\n' \
+        "$1" "$1" > "$probe_dir/Makevars"
+    cp "$probe_dir/Makevars" "$probe_dir/Makevars.win"
+    rm -f "$probe_dir/conftest.o" "$probe_dir/conftest.so" \
+        "$probe_dir/conftest.dll" "$probe_dir/conftest.dylib"
+    (cd "$probe_dir" && "$R_BIN" CMD SHLIB conftest.cpp) >> config.log 2>&1
+}
+if test "$mode" != off; then
+    cat > "$probe_dir/conftest.cpp" <<'EOF'
+#ifndef _OPENMP
+#error OpenMP is not enabled by the selected C++ compiler
+#endif
+#include <omp.h>
+extern "C" int rcppamgcl_openmp_probe() {
+    int count = 0;
+#pragma omp parallel reduction(+:count)
+    count += omp_get_thread_num() >= 0;
+    return count + omp_get_thread_limit();
+}
+EOF
+    echo "configure: checking C++14 OpenMP compilation and linking"
+    if probe '$(SHLIB_OPENMP_CXXFLAGS)'; then
+        openmp_flags='$(SHLIB_OPENMP_CXXFLAGS)'
+        disable_openmp=
+        echo "configure: OpenMP enabled"
+    elif test "$mode" = on; then
+        cat config.log >&2
+        echo "configure: OpenMP requested but compilation/linking failed" >&2
+        exit 1
+    else
+        echo "configure: OpenMP unavailable; using serial backend (see config.log)"
+    fi
+else
+    echo "configure: OpenMP disabled by RCPPAMGCL_OPENMP=off"
+fi
+
+# AMGCL also contains unguarded OpenMP pragmas. Confirm the serial compiler
+# really disables OpenMP, including when the user supplies global flags.
+if test -n "$disable_openmp"; then
+    cat > "$probe_dir/conftest.cpp" <<'EOF'
+#ifdef _OPENMP
+#error Serial build requested but the compiler enables OpenMP
+#endif
+extern "C" int rcppamgcl_serial_probe() { return 1; }
+EOF
+    if probe ''; then
+        openmp_flags=
+    elif probe '-fno-openmp'; then
+        openmp_flags=-fno-openmp
+    else
+        cat config.log >&2
+        echo "configure: cannot compile a serial C++14 backend; check compiler flags" >&2
+        exit 1
+    fi
+fi
+cleanup_probe
+trap - EXIT HUP INT TERM
+
+sed -e "s|@OPENMP_FLAGS@|$openmp_flags|g" \
+    -e "s|@DISABLE_OPENMP@|$disable_openmp|g" \
+    src/Makevars.in > src/Makevars
+cp src/Makevars src/Makevars.win

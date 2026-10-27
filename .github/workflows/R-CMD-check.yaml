@@ -1,0 +1,67 @@
+name: R CMD check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.os }} / OpenMP ${{ matrix.openmp }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        openmp: ["on", "off"]
+    env:
+      RCPPAMGCL_OPENMP: ${{ matrix.openmp }}
+      OMP_THREAD_LIMIT: 2
+      OMP_NUM_THREADS: 2
+      R_KEEP_PKG_SOURCE: yes
+      _R_CHECK_CRAN_INCOMING_REMOTE_: false
+      _R_CHECK_FORCE_SUGGESTS_: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+      - name: Configure Apple clang with libomp
+        if: runner.os == 'macOS' && matrix.openmp == 'on'
+        shell: bash
+        run: |
+          brew install libomp
+          omp_prefix="$(brew --prefix libomp)"
+          mkdir -p "$HOME/.R"
+          printf 'SHLIB_OPENMP_CXXFLAGS = -Xclang -fopenmp -I%s/include -L%s/lib -Wl,-rpath,%s/lib -lomp\n' \
+            "$omp_prefix" "$omp_prefix" "$omp_prefix" >> "$HOME/.R/Makevars"
+      - name: Install and verify requested backend
+        shell: Rscript {0}
+        run: |
+          install.packages(".", repos = NULL, type = "source", INSTALL_opts = "--preclean")
+          library(RcppAMGCL)
+          info <- amgcl_info()
+          print(info)
+          stopifnot(identical(info$openmp, Sys.getenv("RCPPAMGCL_OPENMP") == "on"))
+          stopifnot(info$max_threads >= 1L, info$max_threads <= 2L)
+          source("tests/solver.R", echo = TRUE)
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--as-cran", "--no-manual")'
+          build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
+          error-on: '"warning"'
+          upload-snapshots: true
+      - name: Upload check results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-${{ matrix.os }}-openmp-${{ matrix.openmp }}
+          path: check
