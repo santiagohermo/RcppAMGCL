@@ -1,0 +1,34 @@
+revision=working
+label=parallel
+compiler=C:/rtools45/x86_64-w64-mingw32.static.posix/bin/g++.exe
+source_commit=8b96cca96034df76493972cc279e6e6b4be9a677
+original_header_sha256=7bf52d36ab905ef137768dc956749e16b84733e015c573864da144abd4f98c7c
+benchmark_cpp_sha256=0a82abad676eb0cc56a3f108fd5f1e9f0cad0abb5c681eef5d7dd88f4ad1ede3
+flags=-std=c++14 -O2 -Wall -Wextra -fopenmp
+built_utc=2026-10-27T01:15:55.2456159Z
+allocation_metric=requested live C++ new/new[] payload bytes after setup, input CSR moved
+excluded=R memory; malloc/OpenMP runtime allocations; allocator overhead; peak setup memory
+timing=residual call instrumented in temporary header only; one solve warmup before repetitions
+g++.exe (GCC) 14.3.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+original_header_git_blob=d15b51a7a9e9e60edddec394aaa28450350beeee
+snapshot_kind=working-tree snapshot; source_commit is base history and header hash identifies exact source
+
+RUN METADATA
+started_utc=2026-10-27T01:16:14.6576724Z
+side=100
+repetitions=3
+threads=1,2,4,8
+OMP_THREAD_LIMIT=
+OMP_NUM_THREADS=
+OMP_DYNAMIC=
+OMP_PROC_BIND=
+OMP_PLACES=
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 197 Stepping 2, GenuineIntel
+NUMBER_OF_PROCESSORS=16
+os=Microsoft Windows NT 10.0.26300.0
+finished_utc=2026-10-27T01:16:26.4025905Z
+matched_header_commit=771186f44af6b215d5844e8b6e729a3e94a6dcc4

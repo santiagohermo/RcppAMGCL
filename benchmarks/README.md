@@ -1,5 +1,34 @@
 # Setup and solve benchmarks
 
+## After the review fixes
+
+Measured the checked OpenMP package from commit `771186f44af6b215d5844e8b6e729a3e94a6dcc4`
+on 27 October 2026, using the same host, million-unknown matrices, RHS,
+tolerance, warmup and three-repetition method described below. No package
+builds or other benchmarks ran concurrently. Median wall-clock seconds:
+
+| Matrix | Threads | Setup (s) | Solve (s) |
+| --- | ---: | ---: | ---: |
+| 2D Poisson | 1 | 0.50 | 0.68 |
+| 2D Poisson | 2 | 0.31 | 0.41 |
+| 2D Poisson | 4 | 0.22 | 0.27 |
+| 2D Poisson | 8 | 0.17 | 0.20 |
+| 3D Poisson | 1 | 1.11 | 0.96 |
+| 3D Poisson | 2 | 0.69 | 0.61 |
+| 3D Poisson | 4 | 0.46 | 0.42 |
+| 3D Poisson | 8 | 0.32 | 0.27 |
+
+All 24 solves converged, with the same iteration counts and residuals as
+the initial run. These separate runs show timing variability as well as the
+benefit of the parallel residual at higher thread counts; they do not show
+a consistent setup speed improvement.
+
+- [Updated R measurements](windows-openmp-review.csv) and [session metadata](windows-openmp-review.csv.session.txt).
+- [Native memory and residual profile](native-memory-residual.md), including
+  the measured 113.525 MiB persistent CSR saving and separately timed residual.
+
+## Initial implementation
+
 Measured on 27 October 2026 using the checked OpenMP package from source
 commit `ec8bd801c6583a26601aee9140547be80111d680`. Host: Intel Core Ultra 7
 265H, Windows 11, R 4.5.3, Rtools GCC 14.3.0. `amgcl_info()` reported

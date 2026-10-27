@@ -1,0 +1,33 @@
+revision=6cb9d30
+label=baseline
+compiler=C:/rtools45/x86_64-w64-mingw32.static.posix/bin/g++.exe
+flags=-std=c++14 -O2 -Wall -Wextra -fopenmp
+side=100
+repetitions=3
+threads=1,2,4,8
+built_utc=2026-10-27T01:11:41.2964592Z
+OMP_THREAD_LIMIT=
+OMP_NUM_THREADS=
+allocation_metric=requested live C++ new/new[] payload bytes after setup, input CSR moved
+excluded=R memory; malloc/OpenMP runtime allocations; allocator overhead; peak setup memory
+timing=residual call instrumented in temporary header only; one solve warmup before repetitions
+g++.exe (GCC) 14.3.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+source_commit=6cb9d3070f1d377a015e993dfd7020013015e4b1
+original_header_sha256=bfcba739cf9a7940c3a1f0a1dd745f20130bcffa11c3508a793e2441910423c7
+benchmark_cpp_sha256=0a82abad676eb0cc56a3f108fd5f1e9f0cad0abb5c681eef5d7dd88f4ad1ede3
+original_header_reconstructed=exact reversal of temporary timing insertion
+
+original_header_git_blob=81c371a5dd4c491a0d496d624c29f2ed4821d2aa
+
+RUN METADATA
+side=100
+repetitions=3
+threads=1,2,4,8
+OMP_THREAD_LIMIT=
+OMP_NUM_THREADS=
+other_runtime_settings=not recorded by initial helper revision
+started_utc=not recorded by initial helper revision
+finished_csv_write_utc=2026-10-27T01:12:39.0277032Z
