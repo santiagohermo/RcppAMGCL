@@ -4,6 +4,11 @@
 ^\.gitattributes$
 ^\.Rbuildignore$
 ^INTERFACE\.md$
+^README\.qmd$
+^README\.html$
+^README_files$
+^README_cache$
+^\.quarto$
 ^config\.log$
 ^\.rcppamgcl-conftest-.*$
 ^src/Makevars(\.win)?$

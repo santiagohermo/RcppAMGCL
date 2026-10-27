@@ -16,4 +16,8 @@ config.log
 .local*/
 .cache/
 .artifacts/
+.quarto/
+README.html
+README_files/
+README_cache/
 benchmarks/results-*.csv

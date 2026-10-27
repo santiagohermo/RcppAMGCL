@@ -1,0 +1,183 @@
+---
+format: gfm
+engine: knitr
+execute:
+  echo: false
+---
+
+<!--
+README.md is generated from README.qmd.
+With Quarto and the R packages knitr and rmarkdown installed, run:
+    quarto render README.qmd
+Rendering reads the recorded CSV; it does not rerun the benchmarks.
+The R usage examples are displayed without execution.
+-->
+
+# RcppAMGCL
+
+A minimal Rcpp wrapper for AMGCL: sparse CG and BiCGStab solvers with
+algebraic multigrid preconditioning, reusable solver objects, optional
+OpenMP, and an R-independent C++ interface.
+
+## Install
+
+Requires R 4.3.0 or later, `Rcpp`, `Matrix`, and an R compiler toolchain
+(Rtools on Windows). From this repository:
+
+```sh
+R CMD build .
+R CMD INSTALL RcppAMGCL_0.1.0.tar.gz
+```
+
+OpenMP is detected automatically. Set `RCPPAMGCL_OPENMP=on` to require it or
+`RCPPAMGCL_OPENMP=off` to build without it. Both builds expose the same API.
+
+## Use from R
+
+```r
+library(RcppAMGCL)
+
+A <- Matrix::bandSparse(1000, k = c(0, 1),
+  diagonals = list(rep(3, 1000), rep(-1, 999)), symmetric = TRUE)
+b <- rep(1, nrow(A))
+
+fit <- amgcl_solve(A, b)
+fit$x
+fit$converged
+fit$residual
+
+# Reuse setup for another right-hand side.
+s <- amgcl_setup(A, solver = "cg", tol = 1e-8)
+amgcl_solve(s, 2 * b)$x
+```
+
+`A` accepts `dgCMatrix` or `dsCMatrix`; `b` accepts a real numeric vector
+or one-column numeric matrix. Use `solver = "bicgstab"` for nonsymmetric
+systems. CG requires a symmetric positive definite matrix, which is not
+verified automatically. Matrices must be square, finite, and have nonzero
+diagonal entries. Check `converged` and the independently computed
+`residual` before using a result. Reusable solvers are process-local and
+cannot be saved and restored. See `?amgcl_setup` and `?amgcl_solve` for the
+complete input and lifetime contracts.
+
+## Threads
+
+```r
+amgcl_info()
+s <- amgcl_setup(A, threads = 2)
+fit <- amgcl_solve(s, b, threads = 2)
+```
+
+Each operation defaults to one thread. Requests are capped by processor
+capacity and `OMP_THREAD_LIMIT`; serial builds use one thread. OpenMP
+settings are restored after each operation. Set `OMP_THREAD_LIMIT` before
+starting R.
+
+## Performance
+
+Median seconds on an Intel Core Ultra 7 265H, Windows 11, R 4.5.3 and
+Matrix 1.7-4 with R's supplied BLAS. Both methods reuse setup for ten
+distinct right-hand sides; three repetitions per configuration.
+
+```{r}
+#| label: benchmark-table
+#| results: asis
+
+benchmarks <- read.csv("benchmarks/windows-comparison.csv")
+timings <- c("setup_seconds", "first_solve_seconds", "total_seconds",
+             "solve_all_seconds", "batch_total_seconds")
+stopifnot(
+  nrow(benchmarks) > 0L,
+  all(benchmarks$status == "ok"),
+  all(benchmarks$child_exit_status == 0L),
+  all(benchmarks$completed_rhs == benchmarks$rhs_count),
+  all(benchmarks$rhs_count == 10L),
+  all(benchmarks$max_residual <= 1e-8),
+  all(benchmarks$max_solution_error <= 1e-5),
+  all(is.finite(as.matrix(benchmarks[timings]))),
+  all(abs(benchmarks$total_seconds - benchmarks$setup_seconds -
+          benchmarks$first_solve_seconds) < 1e-8),
+  all(abs(benchmarks$batch_total_seconds - benchmarks$setup_seconds -
+          benchmarks$solve_all_seconds) < 1e-8)
+)
+
+# Show the largest grid in each dimension, with AMGCL at one and eight threads.
+largest <- ave(benchmarks$n, benchmarks$matrix, FUN = max)
+selected <- subset(benchmarks, n == largest &
+  (method == "Matrix_Cholesky" | requested_threads %in% c(1L, 8L)))
+stopifnot(all(table(selected$case_id) == 3L))
+
+# Take medians of totals paired within each repetition, not sums of medians.
+summary <- aggregate(
+  cbind(total_seconds, batch_total_seconds) ~
+    matrix + n + method + requested_threads,
+  data = selected, FUN = median
+)
+summary <- summary[order(summary$matrix, summary$method,
+                         summary$requested_threads), ]
+stopifnot(nrow(summary) == 6L)
+
+dimensions <- c(poisson2d = "2D", poisson3d = "3D")
+methods <- c(AMGCL_CG = "AMGCL CG", Matrix_Cholesky = "Matrix Cholesky")
+benchmark_table <- data.frame(
+  system = paste0(dimensions[summary$matrix], ", ",
+                  format(summary$n, big.mark = ",", scientific = FALSE,
+                         trim = TRUE), " unknowns"),
+  method = unname(methods[summary$method]),
+  threads = summary$requested_threads,
+  one_rhs = formatC(summary$total_seconds, format = "f", digits = 3),
+  ten_rhs = formatC(summary$batch_total_seconds, format = "f", digits = 3)
+)
+knitr::kable(
+  benchmark_table, format = "pipe", row.names = FALSE,
+  col.names = c("Poisson system", "Method", "Threads",
+                "Setup + 1 RHS (s)", "Setup + 10 RHS (s)"),
+  align = c("l", "l", "r", "r", "r")
+)
+```
+
+All solves met a relative residual target of `1e-8`; Cholesky achieved
+much tighter accuracy. AMGCL had cheaper setup in these cases, while
+Cholesky was faster for ten RHS in 2D. These deterministic grid problems
+suit AMG; results depend on the matrix, BLAS, hardware and accuracy target.
+
+See [benchmark methods and results](benchmarks/README.md) for matrix sizes,
+setup and solve timings, totals, and reproduction commands.
+
+## Use from C++
+
+Add `RcppAMGCL` to a downstream R package's `LinkingTo` field and include
+`RcppAMGCL.h`. The header also works in standalone C++ without R or Rcpp:
+
+```cpp
+#include <RcppAMGCL.h>
+
+rcppamgcl::Matrix A;
+A.n = 2;
+A.ptr = {0, 2, 4};       // CSR row pointers
+A.col = {0, 1, 0, 1};    // Sorted, zero-based column indices
+A.val = {2, -1, -1, 2};
+rcppamgcl::Solver solver(std::move(A), "cg", 1e-8, 1000, 1);
+auto result = solver.solve(std::vector<double>{1, 0}, 1);
+```
+
+The header is compatible with C++14. Downstream builds supply their own
+OpenMP compiler and linker flags; no link to the R package library is
+required. See the [API and build contract](INTERFACE.md).
+
+AMGCL [1.4.5 is pinned](inst/AMGCL-VERSION) and bundled with its
+[MIT license](inst/licenses/AMGCL-LICENSE.md); Boost is not required.
+The R wrapper is also MIT licensed. See [validation](validation/README.md)
+for executed checks and platform results.
+
+## Disclaimer
+
+The original AMGCL solver code was developed by Denis Demidov and upstream
+contributors in [ddemidov/amgcl](https://github.com/ddemidov/amgcl), not in
+this repository. RcppAMGCL brings that library to R through Rcpp, bundling
+AMGCL 1.4.5 with its original license notices and the compatibility patches
+documented in [inst/AMGCL-VERSION](inst/AMGCL-VERSION).
+
+GPT-6 Astra wrote the R interface code in [R/](R/) that connects R users to
+the C++ solvers through Rcpp.
+Fable 5.1 provided feedback on the package.
