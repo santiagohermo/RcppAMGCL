@@ -1,0 +1,14 @@
+AMGCL 1.4.5
+Upstream: https://github.com/ddemidov/amgcl
+Tag: 1.4.5
+Commit: dde264f0f8d5d0a292a3bb3709952cc4e004604e
+Archive: https://github.com/ddemidov/amgcl/archive/refs/tags/1.4.5.zip
+Archive SHA256: 5ea137e6068a8c19b72ae18e8de475c5a266a7f5c613cb8e5efd814d52d53f78
+Vendored directory: inst/include/amgcl
+License: MIT, retained in inst/licenses/AMGCL-LICENSE.md and header notices.
+Headers are unmodified from this release unless patches are documented below.
+
+Local patch: solver/cg.hpp and solver/bicgstab.hpp guard std::cout usage
+with #ifndef AMGCL_RCPP_NO_OUTPUT. RcppAMGCL.h defines this macro to suppress
+upstream console access; solver arithmetic is unchanged. This also avoids
+access to process-wide iostream state while running R package code.
