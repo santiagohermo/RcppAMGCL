@@ -1,5 +1,30 @@
 # Validation
 
+## Metadata and citation update: 28 October 2026
+
+The archive with repository URLs, the AMGCL publication reference and the
+installed CITATION file was checked on Windows 11 with R-devel 4.7.0
+(2026-10-26 r90766), Rtools GCC 14.3.0, Rcpp 1.1.2, Matrix 1.7-6 and
+V8 8.2.0. OpenMP was enabled and capped at two threads.
+
+The complete `R CMD check --as-cran` run, including online incoming checks,
+returned **0 errors, 0 warnings, 1 NOTE**. Tests, examples and PDF/HTML
+manuals passed. The incoming NOTE reports "New submission" and HTTP 404
+for the repository and issue-tracker URLs, which are currently private.
+Make the repository public and rerun incoming checks before submitting.
+The DOI resolved successfully, and the installed `citation("RcppAMGCL")`
+returned both the package and AMGCL references.
+
+See the [check log](windows-r-devel-metadata-as-cran.log), with the absolute
+repository path replaced by `<workspace>`, and
+[submission notes](../cran-comments.md).
+
+Checked `RcppAMGCL_0.1.0.tar.gz`, SHA256:
+`15440d6f16cbdf425fb0e5dc99172d0cc494d2dfc3c6ecf2afe8c46c602c3d80`.
+The full MIT text is available in the repository's `LICENSE.md`; the
+source package retains the standard R MIT `LICENSE` file. `LICENSE.md`
+and the submission notes are excluded from the source archive.
+
 ## Release preparation: 28 October 2026
 
 The final attribution-update source archive was built and checked on

@@ -20,4 +20,10 @@ upstream license notices.
 This product includes Kratos Multi-Physics technology. The installed
 \file{COPYRIGHTS} file inventories bundled-code ownership and licenses;
 additional notices are installed under \file{licenses}.
+Use \code{citation("RcppAMGCL")} for references to this package and AMGCL.
+}
+\references{
+Demidov, D. (2020). AMGCL -- A C++ library for efficient solution of large
+sparse linear systems. \emph{Software Impacts}, 6, 100037.
+\doi{10.1016/j.simpa.2020.100037}.
 }

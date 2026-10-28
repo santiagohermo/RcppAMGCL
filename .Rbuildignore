@@ -4,6 +4,7 @@
 ^\.gitattributes$
 ^\.Rbuildignore$
 ^INTERFACE\.md$
+^LICENSE\.md$
 ^README\.qmd$
 ^README\.html$
 ^README_files$
