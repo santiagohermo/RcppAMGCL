@@ -22,7 +22,14 @@ OpenMP, and an R-independent C++ interface.
 ## Install
 
 Requires R 4.3.0 or later, `Rcpp`, `Matrix`, and an R compiler toolchain
-(Rtools on Windows). From this repository:
+(Rtools on Windows). Install from GitHub with `devtools`:
+
+```r
+install.packages("devtools") # If needed
+devtools::install_github("santiagohermo/RcppAMGCL")
+```
+
+Or build and install from a local checkout:
 
 ```sh
 R CMD build .

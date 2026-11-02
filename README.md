@@ -17,7 +17,14 @@ OpenMP, and an R-independent C++ interface.
 ## Install
 
 Requires R 4.3.0 or later, `Rcpp`, `Matrix`, and an R compiler toolchain
-(Rtools on Windows). From this repository:
+(Rtools on Windows). Install from GitHub with `devtools`:
+
+``` r
+install.packages("devtools") # If needed
+devtools::install_github("santiagohermo/RcppAMGCL")
+```
+
+Or build and install from a local checkout:
 
 ``` sh
 R CMD build .
@@ -118,16 +125,18 @@ required. See the [API and build contract](INTERFACE.md).
 
 AMGCL [1.4.5 is pinned](inst/AMGCL-VERSION) and bundled with its [MIT
 license](inst/licenses/AMGCL-LICENSE.md); Boost is not required. The R
-wrapper is also [MIT licensed](LICENSE.md). See [validation](validation/README.md) for
-executed checks and platform results.
+wrapper is also [MIT licensed](LICENSE.md). See
+[validation](validation/README.md) for executed checks and platform
+results.
 
 This product includes Kratos Multi-Physics technology. See the
-[bundled-code copyright inventory](inst/COPYRIGHTS) and
-[third-party notices](inst/licenses/AMGCL-THIRD-PARTY-NOTICES.txt).
+[bundled-code copyright inventory](inst/COPYRIGHTS) and [third-party
+notices](inst/licenses/AMGCL-THIRD-PARTY-NOTICES.txt).
 
 For publication references to this package and AMGCL, run
 `citation("RcppAMGCL")` in R. The AMGCL reference is Demidov (2020),
-[AMGCL -- A C++ library for efficient solution of large sparse linear systems](https://doi.org/10.1016/j.simpa.2020.100037).
+[AMGCL – A C++ library for efficient solution of large sparse linear
+systems](https://doi.org/10.1016/j.simpa.2020.100037).
 
 ## Disclaimer
 
