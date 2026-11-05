@@ -1,3 +1,11 @@
+## Resubmission
+
+This is a resubmission. In this version I have:
+
+* Replaced relative links in README.md to files excluded from the package
+  build (benchmarks/README.md, INTERFACE.md, LICENSE.md,
+  validation/README.md) with absolute GitHub URLs.
+
 ## Submission
 
 This is the first submission of RcppAMGCL (0.1.0).

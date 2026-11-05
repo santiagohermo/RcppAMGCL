@@ -54,15 +54,18 @@ s <- amgcl_setup(A, solver = "cg", tol = 1e-8)
 amgcl_solve(s, 2 * b)$x
 ```
 
-`A` accepts `dgCMatrix` or `dsCMatrix`; `b` accepts a real numeric
-vector or one-column numeric matrix. Use `solver = "bicgstab"` for
-nonsymmetric systems. CG requires a symmetric positive definite matrix,
-which is not verified automatically. Matrices must be square, finite,
-and have nonzero diagonal entries. Check `converged` and the
-independently computed `residual` before using a result. Reusable
-solvers are process-local and cannot be saved and restored. See
-`?amgcl_setup` and `?amgcl_solve` for the complete input and lifetime
-contracts.
+Arguments:
+
+- `A` accepts `dgCMatrix` or `dsCMatrix`
+- `b` accepts a real numeric vector or one-column numeric matrix.
+- Use `solver = "bicgstab"` for nonsymmetric systems. CG requires a
+  symmetric positive definite matrix, which is not verified
+  automatically.
+
+Matrices must be square, finite, and have nonzero diagonal entries.
+
+See `?amgcl_setup` and `?amgcl_solve` for the complete input and
+lifetime contracts.
 
 ## Threads
 
@@ -72,16 +75,13 @@ s <- amgcl_setup(A, threads = 2)
 fit <- amgcl_solve(s, b, threads = 2)
 ```
 
-Each operation defaults to one thread. Requests are capped by processor
-capacity and `OMP_THREAD_LIMIT`; serial builds use one thread. OpenMP
-settings are restored after each operation. Set `OMP_THREAD_LIMIT`
-before starting R.
+Each operation defaults to one thread.
 
 ## Performance
 
 Median seconds on an Intel Core Ultra 7 265H, Windows 11, R 4.5.3 and
 Matrix 1.7-4 with R’s supplied BLAS. Both methods reuse setup for ten
-distinct right-hand sides; three repetitions per configuration.
+distinct right-hand sides, with three repetitions per configuration.
 
 | Poisson system | Method | Threads | Setup + 1 RHS (s) | Setup + 10 RHS (s) |
 |:---|:---|---:|---:|---:|
@@ -92,14 +92,15 @@ distinct right-hand sides; three repetitions per configuration.
 | 3D, 103,823 unknowns | AMGCL CG | 8 | 0.087 | 0.462 |
 | 3D, 103,823 unknowns | Matrix Cholesky | 1 | 19.857 | 20.516 |
 
-All solves met a relative residual target of `1e-8`; Cholesky achieved
+All solves met a relative residual target of `1e-8`. Cholesky achieved
 much tighter accuracy. AMGCL had cheaper setup in these cases, while
-Cholesky was faster for ten RHS in 2D. These deterministic grid problems
-suit AMG; results depend on the matrix, BLAS, hardware and accuracy
-target.
+Cholesky was faster for ten RHS in 2D. Results depend on the matrix,
+BLAS, hardware and accuracy target.
 
-See [benchmark methods and results](benchmarks/README.md) for matrix
-sizes, setup and solve timings, totals, and reproduction commands.
+See [benchmark methods and
+results](https://github.com/santiagohermo/RcppAMGCL/blob/main/benchmarks/README.md)
+for matrix sizes, setup and solve timings, totals, and reproduction
+commands.
 
 ## Use from C++
 
@@ -120,14 +121,17 @@ auto result = solver.solve(std::vector<double>{1, 0}, 1);
 ```
 
 The header is compatible with C++14. Downstream builds supply their own
-OpenMP compiler and linker flags; no link to the R package library is
-required. See the [API and build contract](INTERFACE.md).
+OpenMP compiler and linker flags. See the [API and build
+contract](https://github.com/santiagohermo/RcppAMGCL/blob/main/INTERFACE.md).
 
 AMGCL [1.4.5 is pinned](inst/AMGCL-VERSION) and bundled with its [MIT
-license](inst/licenses/AMGCL-LICENSE.md); Boost is not required. The R
-wrapper is also [MIT licensed](LICENSE.md). See
-[validation](validation/README.md) for executed checks and platform
-results.
+license](inst/licenses/AMGCL-LICENSE.md). Boost is not required. The R
+wrapper is also [MIT
+licensed](https://github.com/santiagohermo/RcppAMGCL/blob/main/LICENSE.md).
+
+See
+[validation](https://github.com/santiagohermo/RcppAMGCL/blob/main/validation/README.md)
+for executed checks and platform results.
 
 This product includes Kratos Multi-Physics technology. See the
 [bundled-code copyright inventory](inst/COPYRIGHTS) and [third-party
